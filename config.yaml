@@ -1,0 +1,82 @@
+- 
+  emulation:
+    name: VariableAvailableCapacity
+    module: variable_available_capacity
+    config:
+      loss: [0, 0.001, 0.005, 0.01]
+      delay: [0, 50, 100, 150]
+      latency: [300]
+  flows:
+    - name: RTPoverQUIC
+      module: rtp_over_quic_go
+      server_node: l0
+      receiver_node: r0
+      delay: 0
+      extra:
+        sender_config:
+          transport: udp
+          input: input/input.y4m
+        receiver_config:
+          transport: udp
+- 
+  emulation:
+    name: VariableAvailableCapacity
+    module: variable_available_capacity
+    config:
+      loss: [0, 0.001, 0.005, 0.01]
+      delay: [0, 50, 100, 150]
+      latency: [300]
+  flows:
+    - name: RTPoverQUIC
+      module: rtp_over_quic_go
+      server_node: l0
+      receiver_node: r0
+      delay: 0
+      extra:
+        sender_config:
+          transport: udp
+          input: input/input.y4m
+        receiver_config:
+          transport: udp
+    - name: RTPoverQUIC
+      module: rtp_over_quic_go
+      server_node: l1
+      receiver_node: r1
+      delay: 0
+      extra:
+        sender_config:
+          transport: udp
+          input: input/input.y4m
+        receiver_config:
+          transport: udp
+- 
+  emulation:
+    name: VariableAvailableCapacity
+    module: variable_available_capacity
+    config:
+      loss: [0, 0.001, 0.005, 0.01]
+      delay: [0, 50, 100, 150]
+      latency: [300]
+  flows:
+    - name: RTPoverQUIC
+      module: rtp_over_quic_go
+      server_node: l0
+      receiver_node: r0
+      delay: 0
+      extra:
+        sender_config:
+          transport: udp
+          input: input/input.y4m
+        receiver_config:
+          transport: udp
+    - name: RTPoverQUIC
+      module: rtp_over_quic_go
+      server_node: r1
+      receiver_node: l1
+      delay: 0
+      extra:
+        sender_config:
+          transport: udp
+          input: input/input.y4m
+        receiver_config:
+          transport: udp
