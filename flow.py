@@ -20,29 +20,38 @@ class Flow(ABC):
         return self._receiver_node
 
     @abstractmethod
-    def __init__(self, id, server_node, receiver_node, delay, log_dir, extra):
+    def __init__(self, id, server_node, receiver_node, delay, log_dir):
         self._id = id
         self._server_node = server_node
         self._receiver_node = receiver_node
         self._delay = delay
         self._log_dir = log_dir
-        self._extra = extra
 
+    @staticmethod
     @abstractmethod
-    def server_cmd(self, addr):
+    def builders(
+            server_node,
+            receiver_node,
+            delay,
+            config,
+            ):
         pass
 
     @abstractmethod
-    def client_cmd(self, addr):
+    def server_cmd(self, addr, port):
         pass
 
     @abstractmethod
-    def config(self):
+    def client_cmd(self, addr, port):
         pass
 
-    def start_server(self, q, end_event, host, addr):
+    @abstractmethod
+    def config_json(self):
+        pass
+
+    def start_server(self, q, end_event, host, addr, port):
         Path(self._log_dir).mkdir(parents=True, exist_ok=True)
-        cmd = self.server_cmd(addr)
+        cmd = self.server_cmd(addr, port)
         q.put('server_{}_cmd: {}'.format(self._id, cmd))
         proc = host.popen(cmd, stderr=PIPE, stdout=PIPE)
         threads = []
@@ -66,8 +75,8 @@ class Flow(ABC):
         for t in threads:
             t.join()
 
-    def start_client(self, q, end_event, host, addr):
-        cmd = self.client_cmd(addr)
+    def start_client(self, q, end_event, host, addr, port):
+        cmd = self.client_cmd(addr, port)
         q.put('client_{}_cmd: {}'.format(self._id, cmd))
         proc = host.popen(cmd, stderr=PIPE, stdout=PIPE)
         threads = []
@@ -103,3 +112,9 @@ def communicate(q, id, endpoint, stream, log_dir, out):
                 id,
                 line.decode('utf-8').strip()))
             log_file.write('{}'.format(line))
+
+
+class FlowBuilder():
+    @abstractmethod
+    def build(id, log_dir) -> Flow:
+        pass

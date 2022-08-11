@@ -55,11 +55,11 @@ class Emulation(ABC):
 
     @staticmethod
     @abstractmethod
-    def build(config):
+    def builders(config):
         pass
 
     @abstractmethod
-    def config(self):
+    def config_json(self):
         pass
 
     @abstractmethod
@@ -94,3 +94,9 @@ class Emulation(ABC):
                 self._queue.put(cmd)
         with open(self._log_file, 'a') as log:
             log.write('{},{}\n'.format(t, config.get_log_line()))
+
+
+class EmulationBuilder():
+    @abstractmethod
+    def build(self, log_dir):
+        pass

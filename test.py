@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import itertools
 import json
 import os
 import time
@@ -61,7 +62,7 @@ class Test:
             host = self.net.getNodeByName(f.server_node)
             t = Thread(
                     target=f.start_server,
-                    args=(q, e, host, '{}:{}'.format(host.IP(), PORT)),
+                    args=(q, e, host, host.IP(), PORT),
                 )
             t.start()
             self.server_threads.append(t)
@@ -81,13 +82,14 @@ class Test:
         for f in self.flows:
             host = self.net.getNodeByName(f.receiver_node)
             server = self.net.getNodeByName(f.server_node)
-            addr = '{}:{}'.format(server.IP(), PORT)
             at = self.start_time + f.delay
             print('{} schedule flow at: {}'.format(
                 timestamp(time.time()), timestamp(at)))
             t = Thread(
                     target=run_at,
-                    args=(at, lambda: f.start_client(q, e, host, addr)))
+                    args=(
+                        at,
+                        lambda: f.start_client(q, e, host, server.IP(), PORT)))
             t.start()
             self.client_threads.append(t)
 
@@ -101,12 +103,12 @@ class Test:
     def write_meta_info(self):
         flows = []
         for f in self.flows:
-            flows.append(f.config())
+            flows.append(f.config_json())
 
         config = {
                 'start_time': self._start_time,
                 'end_time': self._end_time,
-                'emulation': self.emulation.config(),
+                'emulation': self.emulation.config_json(),
                 'flows': flows,
             }
         Path(self._log_dir).mkdir(parents=True, exist_ok=True)
@@ -157,6 +159,29 @@ class Test:
             self.teardown_network()
 
 
+def parse_flow_builders(flows):
+    flow_sets: [[flow.FlowBuilder]] = [[]] * len(flows)
+    for i, f in enumerate(flows):
+        mod = __import__(f['module'])
+        flow_class = getattr(mod, f['name'])
+        flow_builders = flow_class.builders(
+                f['server_node'],
+                f['receiver_node'],
+                f['delay'],
+                f['config'],
+            )
+        flow_sets[i] = flow_builders
+
+    product = itertools.product(*flow_sets)
+    return list(product)
+
+
+def parse_emulation_builders(emulation):
+    mod = __import__(emulation['module'])
+    emulation_class = getattr(mod, emulation['name'])
+    return emulation_class.builders(emulation['config'])
+
+
 def parse_test_config(file_name, data_dir):
     file = Path(file_name)
     if file.is_file():
@@ -165,26 +190,22 @@ def parse_test_config(file_name, data_dir):
 
     tests = []
     for config_id, config in enumerate(configs):
-        name = config['emulation']['name']
-        emulation_mod = __import__(config['emulation']['module'])
-        emulation_class: emulation.Emulation = getattr(emulation_mod, name)
-        emulations = emulation_class.build(config['emulation']['config'])
-        base_dir = os.path.join(data_dir, '{}-{}'.format(name, config_id))
-        for emu_id, emu in enumerate(emulations):
-            emu_log_dir = os.path.join(base_dir, 'e-{}'.format(emu_id))
-            flows = []
-            for id, f in enumerate(config['flows']):
-                flow_log_dir = os.path.join(emu_log_dir, 'f-{}'.format(id))
-                mod = __import__(f['module'])
-                flows.append(getattr(mod, f['name'])(
-                        id,
-                        f['server_node'],
-                        f['receiver_node'],
-                        f['delay'],
-                        flow_log_dir,
-                        f['extra'],
-                    ))
-            tests.append(TestConfig(emu_log_dir, flows, emu(emu_log_dir)))
+        config_dir = os.path.join(data_dir, str(config_id))
+        emu_builders = parse_emulation_builders(config['emulation'])
+        flow_builders = parse_flow_builders(config['flows'])
+        emu_x_flows = itertools.product(emu_builders, flow_builders)
+
+        for id, x in enumerate(emu_x_flows):
+            emu_name = 'e-{}'.format(id)
+            emu_dir = os.path.join(config_dir, emu_name)
+            emulation = x[0].build(emu_dir)
+            flows = [f.build(
+                i,
+                os.path.join(emu_dir, str(i)),
+                ) for i, f in enumerate(x[1])]
+
+            tc = TestConfig(data_dir, flows, emulation)
+            tests.append(tc)
     return tests
 
 

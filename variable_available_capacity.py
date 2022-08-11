@@ -1,7 +1,23 @@
+import itertools
 import sched
 import time
 
-from emulation import DumbbellTopo, Emulation, LinkConfig
+from emulation import DumbbellTopo, Emulation, EmulationBuilder, LinkConfig
+
+
+class VariableAvailableCapacityBuilder(EmulationBuilder):
+    def __init__(self, loss, delay, latency):
+        self._loss = loss
+        self._delay = delay
+        self._latency = latency
+
+    def build(self, log_dir):
+        return VariableAvailableCapacity(
+                log_dir,
+                self._loss,
+                self._delay,
+                self._latency,
+            )
 
 
 class VariableAvailableCapacity(Emulation):
@@ -21,24 +37,21 @@ class VariableAvailableCapacity(Emulation):
         return DumbbellTopo(n=1)
 
     @staticmethod
-    def build(config):
-        loss_configs = config.get('loss', 0)
-        delay_configs = config.get('delay', 0)
-        latency_configs = config.get('latency', 0)
-        configs = [(loss, delay, latency) for
-                   loss in loss_configs for
-                   delay in delay_configs for
-                   latency in latency_configs]
+    def builders(config):
+        loss_configs = config.get('loss', [0])
+        delay_configs = config.get('delay', [0])
+        latency_configs = config.get('latency', [0])
+        configs = itertools.product(
+                loss_configs, delay_configs, latency_configs)
 
-        emulations = []
+        emulation_builders: [VariableAvailableCapacityBuilder] = []
         for i, config in enumerate(configs):
-            emulations.append(
-                    lambda log_dir: VariableAvailableCapacity(
-                            log_dir, config[0], config[1], config[2]
-                        ))
-        return emulations
+            emulation_builders.append(VariableAvailableCapacityBuilder(
+                config[0], config[1], config[2],
+            ))
+        return emulation_builders
 
-    def config(self):
+    def config_json(self):
         return {
                 'runtime': self._runtime,
                 'link_configs': [x._asdict() for x in self._link_configs],
