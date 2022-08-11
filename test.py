@@ -187,7 +187,8 @@ def parse_test_config(file_name, data_dir):
 
     tests = []
     for config_id, config in enumerate(configs):
-        config_dir = os.path.join(data_dir, str(config_id))
+        config_name = 'c-{}'.format(config_id)
+        config_dir = os.path.join(data_dir, config_name)
         emu_builders = parse_emulation_builders(config['emulation'])
         flow_builders = parse_flow_builders(config['flows'])
         emu_x_flows = itertools.product(emu_builders, flow_builders)
@@ -198,7 +199,7 @@ def parse_test_config(file_name, data_dir):
             emulation = x[0].build(emu_dir)
             flows = [f.build(
                 i,
-                os.path.join(emu_dir, str(i)),
+                os.path.join(emu_dir, 'f-{}'.format(i)),
                 ) for i, f in enumerate(x[1])]
 
             tc = TestConfig(data_dir, flows, emulation)
