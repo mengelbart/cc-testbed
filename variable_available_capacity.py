@@ -34,6 +34,7 @@ class VariableAvailableCapacity(Emulation):
                     LinkConfig(60, 600000, loss, delay, latency),
                     LinkConfig(80, 1000000, loss, delay, latency),
                 ]
+        self._remaining_configs = self._link_configs
 
     def topology(self):
         return DumbbellTopo(n=1)
@@ -64,9 +65,9 @@ class VariableAvailableCapacity(Emulation):
         self.s1_iface = s1.intf('ls1-eth2')
         self.s2_iface = s2.intf('rs1-eth2')
 
-        config = self._link_configs[0]
+        config = self._remaining_configs[0]
         self.update_link(config)
-        self._link_configs = self._link_configs[1:]
+        self._remaining_configs = self._remaining_configs[1:]
         self._tc_cmd = 'change'
 
     def get_link_update_cmds(self, config):
@@ -102,7 +103,7 @@ class VariableAvailableCapacity(Emulation):
 
     def schedule_link_emulation(self, start_time):
         scheduler = sched.scheduler(time.time, time.sleep)
-        for config in self._link_configs:
+        for config in self._remaining_configs:
             scheduler.enterabs(
                     start_time + config.start_time,
                     0,

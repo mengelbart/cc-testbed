@@ -116,7 +116,14 @@ class RTPoverQUIC(Flow):
             ) for c in configs]
 
     def config_json(self):
-        return self._config._asdict()
+        return {
+                'sender_config': self._config.sender_config._asdict(),
+                'receiver_config': self._config.receiver_config._asdict(),
+                'rtp_cc': self._config.rtp_cc._asdict(),
+                'transport': self._config.transport._asdict(),
+                'codec': self._config.codec,
+                'stream': self._config.stream,
+            }
 
     def client_cmd(self, addr, port):
         cmd = [

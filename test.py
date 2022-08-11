@@ -104,13 +104,16 @@ class Test:
             flows.append(f.config_json())
 
         config = {
-                'start_time': self._start_time,
-                'end_time': self._end_time,
+                'start_time': int(self.start_time * 1000),
+                'end_time': int(self.end_time * 1000),
                 'emulation': self.emulation.config_json(),
                 'flows': flows,
             }
-        Path(self._log_dir).mkdir(parents=True, exist_ok=True)
-        with open(os.path.join(self._log_dir, 'config.json'), 'w') as file:
+        path = self.emulation._log_dir
+        print('saving config to {}'.format(path))
+        self.emulation._log_dir
+        Path(path).mkdir(parents=True, exist_ok=True)
+        with open(os.path.join(path, 'config.json'), 'w') as file:
             json.dump(config, file)
 
     def teardown_network(self):
@@ -137,6 +140,7 @@ class Test:
             print('{} sleep {}'.format(timestamp(time.time()), sleep_time))
             time.sleep(sleep_time)
             print('{} sleep done'.format(timestamp(time.time())))
+            self.emulation.close_link_emulation()
             self.end_time = time.time()
             self.write_meta_info()
         except Exception as e:
