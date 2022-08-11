@@ -124,11 +124,13 @@ class RTPoverQUIC(Flow):
                 'send',
                 '--addr', '{}:{}'.format(addr, port),
                 '--source', self._config.sender_config.input,
-                '--rtp-dump', '{}/sender_rtp.log'.format(
+                '--rtp-dump', '{}/sender.rtp'.format(
                         self._log_dir),
-                '--rtcp-dump', '{}/sender_rtcp.log'.format(
+                '--rtcp-dump', '{}/sender.rtcp'.format(
                     self._log_dir),
-                '--cc-dump', '{}/cc.log'.format(self._log_dir),
+                '--cc-dump', '{}/cc.{}'.format(
+                    self._log_dir,
+                    self._config.rtp_cc.rtp_cc),
                 '--qlog', '{}'.format(self._log_dir),
                 '--transport', self._config.transport.protocol,
                 '--rtp-cc', self._config.rtp_cc.rtp_cc,
@@ -177,9 +179,9 @@ class RTPoverQUIC(Flow):
             '--addr', '{}:{}'.format(addr, port),
             '--sink', os.path.join(
                 self._log_dir, self._config.receiver_config.output),
-            '--rtp-dump', '{}/receiver_rtp.log'.format(
+            '--rtp-dump', '{}/receiver.rtp'.format(
                 self._log_dir),
-            '--rtcp-dump', '{}/receiver_rtcp.log'.format(
+            '--rtcp-dump', '{}/receiver.rtcp'.format(
                 self._log_dir),
             '--qlog', '{}'.format(
                 self._log_dir),

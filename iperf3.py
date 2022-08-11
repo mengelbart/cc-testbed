@@ -74,7 +74,7 @@ class Iperf3(Flow):
                 '--bind', addr,
                 '--port', str(port),
                 '--json',
-                '--logfile', os.path.join(self._log_dir, 'server.log'),
+                '--logfile', os.path.join(self._log_dir, 'server.iperf3'),
                 ]
         return cmd
 
@@ -87,7 +87,7 @@ class Iperf3(Flow):
                 '--version4',
                 '--linux-congestion', self._congestion_control_algorithm,
                 '--json',
-                '--logfile', os.path.join(self._log_dir, 'server.log'),
+                '--logfile', os.path.join(self._log_dir, 'client.iperf3'),
                 ]
         return cmd
 
