@@ -74,6 +74,9 @@ class Emulation(ABC):
     def get_link_update_cmds(config: LinkConfig):
         pass
 
+    def tcpdump(self, net, log_dir):
+        pass
+
     def set_log_queue(self, queue):
         self._queue = queue
 

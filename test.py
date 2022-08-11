@@ -52,9 +52,6 @@ class Test:
         self.net = Mininet(topo=topo, autoStaticArp=True)
         self.net.start()
 
-    def run_tcp_dump(self):
-        pass
-
     def start_flows(self, q, e):
         self.server_threads = []
         self.client_threads = []
@@ -68,6 +65,7 @@ class Test:
             self.server_threads.append(t)
 
         self.emulation.set_log_queue(q)
+        self.emulation.tcpdump(self.net)
         self.emulation.init_link_emulation(self.net)
         self.start_time = time.time()
 
@@ -126,7 +124,6 @@ class Test:
         iot.start()
         try:
             self.setup_network()
-            self.run_tcp_dump()
             self.start_flows(io_queue, end_event)
 
             end_time = self.start_time + self.emulation.runtime

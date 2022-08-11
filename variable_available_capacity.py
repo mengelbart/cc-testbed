@@ -1,5 +1,7 @@
 import itertools
+import os
 import sched
+import subprocess
 import time
 
 from emulation import DumbbellTopo, Emulation, EmulationBuilder, LinkConfig
@@ -107,3 +109,13 @@ class VariableAvailableCapacity(Emulation):
                     self.update_link_func(config),
                 )
         scheduler.run()
+
+    def tcpdump(self, net):
+        s1, s2 = 'ls1-eth1', 'rs1-eth1'
+        template = 'tcpdump ip -i {} -s 88 -w {}'
+        FNULL = open(os.devnull, 'w')
+        for s in [s1, s2]:
+            cmd = template.format(
+                    s,
+                    os.path.join(self._log_dir, '{}.pcap'.format(s)))
+            subprocess.Popen(cmd.split(' '), stderr=FNULL)
