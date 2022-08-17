@@ -3,7 +3,7 @@
     name: VariableAvailableCapacity
     module: variable_available_capacity
     config:
-      loss: [0, 0.001, 0.005, 0.01]
+      loss: [0, 0.1, 0.5, 1.0, 2.0, 5.0]
       delay: [0, 50, 100, 150]
       latency: [300]
   flows:
@@ -37,7 +37,7 @@
     name: VariableAvailableCapacity
     module: variable_available_capacity
     config:
-      loss: [0, 0.001, 0.005, 0.01]
+      loss: [0, 0.1, 0.5, 1.0, 2.0, 5.0]
       delay: [0, 50, 100, 150]
       latency: [300]
   flows:
@@ -95,7 +95,7 @@
     name: VariableAvailableCapacity
     module: variable_available_capacity
     config:
-      loss: [0, 0.001, 0.005, 0.01]
+      loss: [0, 0.1, 0.5, 1.0, 2.0, 5.0]
       delay: [0, 50, 100, 150]
       latency: [300]
   flows:
@@ -153,7 +153,7 @@
     name: VariableAvailableCapacity
     module: variable_available_capacity
     config:
-      loss: [0, 0.001, 0.005, 0.01]
+      loss: [0, 0.1, 0.5, 1.0, 2.0, 5.0]
       delay: [0, 50, 100, 150]
       latency: [300]
   flows:

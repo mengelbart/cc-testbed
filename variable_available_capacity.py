@@ -73,26 +73,18 @@ class VariableAvailableCapacity(Emulation):
     def get_link_update_cmds(self, config):
         cmds = []
         for iface in [self.s1_iface, self.s2_iface]:
-            qdisc_cmd = 'tc qdisc ' \
-                        '{} dev {} root handle 1: ' \
-                        'tbf rate {}bit burst 15000 ' \
-                        'latency {}ms'.format(
-                                self._tc_cmd,
-                                iface,
-                                config.bandwidth,
-                                config.latency)
-
             netem_cmd = 'tc qdisc ' \
-                        '{} dev {} parent 1: handle 2: ' \
-                        'netem delay {} ' \
-                        'loss {}'.format(
-                                self._tc_cmd,
-                                iface,
-                                config.delay,
-                                config.loss)
+                        f'{self._tc_cmd} dev {iface} root handle 1: ' \
+                        f'netem delay {config.delay}ms ' \
+                        f'loss random {config.loss}%'
 
-            cmds.append(qdisc_cmd)
+            qdisc_cmd = 'tc qdisc ' \
+                        f'{self._tc_cmd} dev {iface} parent 1: handle 2: ' \
+                        f'tbf rate {config.bandwidth}bit burst 15000 ' \
+                        f'latency {config.latency}ms'
+
             cmds.append(netem_cmd)
+            cmds.append(qdisc_cmd)
 
         return cmds
 
