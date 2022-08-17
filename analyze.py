@@ -3,6 +3,7 @@
 import argparse
 import glob
 import json
+import multiprocessing
 import os
 
 from jinja2 import Environment, FileSystemLoader
@@ -128,7 +129,6 @@ class SingleAnalyzer():
         plots = [{
             'file_name': Path(f).name,
             } for f in self._plot_files]
-        print(plots)
         context = {
             'plots': plots,
             'config': self._config,
@@ -153,14 +153,25 @@ class AggregateAnalyzer():
         pass
 
 
+def run_single(args):
+    Path(args['output_dir']).mkdir(parents=True, exist_ok=True)
+    SingleAnalyzer(args['input_dir'], args['output_dir']).analyze()
+
+
 def analyze_single(args):
-    dirs = [d for d in glob.glob(args.input_dir + '/**/*', recursive=True)
+    dirs = [d for d in glob.glob(args.input_dir + '**', recursive=True)
             if os.path.isdir(d) and
             any(fname.endswith('config.json') for fname in os.listdir(d))]
-    for dir in dirs:
-        out = os.path.join(args.output_dir, dir)
-        Path(out).mkdir(parents=True, exist_ok=True)
-        SingleAnalyzer(dir, out).analyze()
+
+    pool = multiprocessing.Pool(16)
+    args = [{
+            'input_dir': dir,
+            'output_dir': os.path.join(args.output_dir, dir)
+            } for dir in dirs]
+    pool.map(
+        run_single,
+        args,
+    )
 
 
 def analyze_aggregate(args):
