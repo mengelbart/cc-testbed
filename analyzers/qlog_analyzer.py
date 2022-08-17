@@ -6,7 +6,7 @@ from matplotlib.dates import DateFormatter
 from matplotlib.ticker import EngFormatter
 
 
-class QLOGAnalyser():
+class QLOGAnalyzer():
     def read(self, file):
         if file is None:
             return

@@ -44,7 +44,7 @@ def read_scream_target_rate(file):
     )
 
 
-class RTPAnalyser():
+class RTPAnalyzer():
     def __init__(self, basetime):
         self._basetime = basetime
 
@@ -166,7 +166,7 @@ class RTPAnalyser():
         ax.set_title('RTP Throughput')
         ax.xaxis.set_major_formatter(DateFormatter("%M:%S"))
         ax.yaxis.set_major_formatter(EngFormatter(unit='bit/s'))
-        ax.legend(handles=labels, loc='center left', bbox_to_anchor=(1, 0.5))
+        ax.legend(handles=labels)
 
     def plot_latency(self, ax, params={}):
         if self._latency is not None:
