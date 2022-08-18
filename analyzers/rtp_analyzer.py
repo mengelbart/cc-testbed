@@ -132,6 +132,20 @@ class RTPAnalyzer():
         df = df_all.drop('time_send', axis=1)
         self._loss = df.drop('lost', axis=1)
 
+    def average_goodput(self):
+        s = self._incoming_rtp.mean()
+        return s.rate
+
+    def latency_stats(self):
+        mean = self._latency['diff'].mean()
+        max = self._latency['diff'].max()
+        p99 = self._latency['diff'].quantile(0.99)
+        return {
+            'mean': mean,
+            'max': max,
+            'p99': p99,
+        }
+
     def plot_throughput(self, ax, params={}):
         labels = []
 

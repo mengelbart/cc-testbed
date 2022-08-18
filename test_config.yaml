@@ -1,0 +1,30 @@
+- # Variable Available Capacity with a Single Flow
+  emulation:
+    name: VariableAvailableCapacity
+    module: variable_available_capacity
+    config:
+      loss: [0, 5.0]
+      delay: [150]
+      latency: [300]
+  flows:
+    - name: RTPoverQUIC
+      module: rtp_over_quic_go
+      server_node: l0
+      receiver_node: r0
+      delay: 0
+      config:
+        codec: ['h264']
+        stream: [False]
+        transport: 
+          - protocol: 'quic'
+            cc: 'newreno'
+          - protocol: 'quic'
+            cc: 'none'
+          - protocol: 'udp'
+            cc: 'none'
+        rtp_cc:
+          - rtp_cc: 'scream'
+            rtcp_feedback: 'rfc8888'
+            local_rfc8888: False
+        sender_config:
+          input: input/input.y4m
