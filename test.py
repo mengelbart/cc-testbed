@@ -23,7 +23,6 @@ PORT = 4242
 
 
 class TestConfig(NamedTuple):
-    log_dir: str
     flows: flow.Flow
     emulation: emulation.Emulation
 
@@ -45,7 +44,6 @@ class Test:
     def __init__(self, config):
         self.flows: flow.Flow = config.flows
         self.emulation: emulation.Emulation = config.emulation
-        self._log_dir = config.log_dir
 
     def setup_network(self):
         topo = self.emulation.topology()
@@ -185,7 +183,7 @@ def parse_emulation_builders(emulation):
     return emulation_class.builders(emulation['config'])
 
 
-def parse_test_config(file_name, data_dir):
+def parse_test_config(file_name, data_dir, date):
     file = Path(file_name)
     if file.is_file():
         with open(file) as f:
@@ -201,14 +199,14 @@ def parse_test_config(file_name, data_dir):
 
         for id, x in enumerate(emu_x_flows):
             emu_name = 'e-{}'.format(id)
-            emu_dir = os.path.join(config_dir, emu_name)
+            emu_dir = os.path.join(config_dir, emu_name, date)
             emulation = x[0].build(emu_dir)
             flows = [f.build(
                 i,
                 os.path.join(emu_dir, 'f-{}'.format(i)),
                 ) for i, f in enumerate(x[1])]
 
-            tc = TestConfig(data_dir, flows, emulation)
+            tc = TestConfig(flows, emulation)
             tests.append(tc)
     return tests
 
@@ -239,7 +237,8 @@ def parse_test_args():
 def main():
     args = parse_test_args()
     setLogLevel(args.log_level)
-    test_configs = parse_test_config(args.config_file, args.data_dir)
+    date = str(int(time.time() * 1000))
+    test_configs = parse_test_config(args.config_file, args.data_dir, date)
     print('running {} test configs'.format(len(test_configs)))
     for i, test_config in enumerate(test_configs):
         print('running test config {}/{}'.format(i+1, len(test_configs)))
