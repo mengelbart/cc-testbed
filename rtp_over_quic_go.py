@@ -3,6 +3,8 @@ from typing import NamedTuple
 import itertools
 import os
 
+from pathlib import Path
+
 from flow import Flow, FlowBuilder
 
 
@@ -124,6 +126,10 @@ class RTPoverQUIC(Flow):
                 'codec': self._config.codec,
                 'stream': self._config.stream,
             }
+
+    def cleanup(self):
+        p = os.path.join(self._log_dir, self._config.receiver_config.output)
+        Path(p).unlink(missing_ok=True)
 
     def client_cmd(self, addr, port):
         cmd = [

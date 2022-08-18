@@ -49,6 +49,9 @@ class Flow(ABC):
     def config_json(self):
         pass
 
+    def cleanup(self):
+        pass
+
     def start_server(self, q, end_event, host, addr, port):
         Path(self._log_dir).mkdir(parents=True, exist_ok=True)
         cmd = self.server_cmd(addr, port)

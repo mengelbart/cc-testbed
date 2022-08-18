@@ -154,6 +154,8 @@ class Test:
             for thread in self.client_threads:
                 thread.join()
                 print('joined client')
+            for f in self.flows:
+                f.cleanup()
             io_queue.put(None)
             iot.join()
             print('joined iot')
