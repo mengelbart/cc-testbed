@@ -2,6 +2,7 @@ from typing import NamedTuple
 
 import itertools
 import os
+import subprocess
 
 from pathlib import Path
 
@@ -128,6 +129,28 @@ class RTPoverQUIC(Flow):
             }
 
     def cleanup(self):
+        dst = os.path.join(self._log_dir, self._config.receiver_config.output)
+        src = self._config.sender_config.input
+        out = self._log_dir
+        if os.path.isfile(src) and os.path.isfile(dst):
+            ffmpeg_vmaf = f'ffmpeg -i {dst} -i {src} '\
+                    f'-lavfi libvmaf=log_fmt=csv:' \
+                    f'log_path={out}/video_quality.csv:' \
+                    'psnr=1:ssim=1:eof_action=endall '\
+                    '-f null -'
+            print(f'ffmpeg cmd: "{ffmpeg_vmaf}"')
+            subprocess.run(ffmpeg_vmaf.split(' '))
+
+            # Alternative FFMPEG Command if vmaf is not required/too slow:
+            # ffmpeg_cmd = 'ffmpeg ' \
+            #     f'-i {dst} ' \
+            #     f'-i {src} ' \
+            #     '-lavfi ' \
+            #     f'ssim={out}/ssim.log:eof_action=endall;[0:v][1:v]' \
+            #     f'psnr={out}/psnr.log:eof_action=endall ' \
+            #     '-f null -'
+            # subprocess.run(ffmpeg_cmd.split(' '))
+
         p = os.path.join(self._log_dir, self._config.receiver_config.output)
         Path(p).unlink(missing_ok=True)
 
