@@ -8,9 +8,9 @@ def read_rtp(file):
     return pd.read_csv(
         file,
         index_col=0,
-        names=['time', 'rate'],
+        names=['time', 'rate', 'nr'],
         header=None,
-        usecols=[0, 6]
+        usecols=[0, 6, 8]
     )
 
 
@@ -46,15 +46,11 @@ class RTPAnalyzer():
 
     def add_outgoing_rtp(self, file):
         df = read_rtp(file)
-        df = self.set_basetime(df)
-        df['rate'] = df['rate'].apply(lambda x: x * 8)
-        self._outgoing_rtp = df.resample('1s').sum()
+        self._outgoing_rtp = self.set_basetime(df)
 
     def add_incoming_rtp(self, file):
         df = read_rtp(file)
-        df = self.set_basetime(df)
-        df['rate'] = df['rate'].apply(lambda x: x * 8)
-        self._incoming_rtp = df.resample('1s').sum()
+        self._incoming_rtp = self.set_basetime(df)
 
     def add_outgoing_rtcp(self, file):
         df = read_rtcp(file)
@@ -132,12 +128,48 @@ class RTPAnalyzer():
             'p99': p99,
         }
 
+    def plot_departure(self, ax, params={}):
+        defaults = {
+            's': 0.1,
+            'linewidth': 0.5,
+            'label': 'Departure'
+        }
+        p = defaults | params
+        zero = pd.to_datetime(0, unit='ms')
+        df = self._outgoing_rtp.copy()
+        df.index = df.index - zero
+        df.index = df.index.map(lambda x: x.delta / 1e+9)
+        out = ax.scatter(df.index, df['nr'], **p)
+        return out
+
+    def plot_arrival(self, ax, params={}):
+        defaults = {
+            's': 0.1,
+            'linewidth': 0.5,
+            'label': 'Arrival'
+        }
+        p = defaults | params
+        zero = pd.to_datetime(0, unit='ms')
+        df = self._incoming_rtp.copy()
+        df.index = df.index - zero
+        df.index = df.index.map(lambda x: x.delta / 1e+9)
+        out = ax.scatter(df.index, df['nr'], **p)
+        return out
+
     def plot_throughput(self, ax, params={}):
         labels = []
+        outgoing_rtp = self._outgoing_rtp[['rate']].copy()
+        outgoing_rtp['rate'] = outgoing_rtp['rate'].apply(lambda x: x * 8)
+        outgoing_rtp = outgoing_rtp.resample('1s').sum()
+
+        incoming_rtp = self._incoming_rtp[['rate']].copy()
+        incoming_rtp['rate'] = incoming_rtp['rate'].apply(lambda x: x * 8)
+        incoming_rtp = incoming_rtp.resample('1s').sum()
+
         for label, data in {
                 'Target Rate': self._scream_target_rate,
-                'Transmitted RTP': self._outgoing_rtp,
-                'Received RTP': self._incoming_rtp,
+                'Transmitted RTP': outgoing_rtp,
+                'Received RTP': incoming_rtp,
                 }.items():
             if data is not None:
                 defaults = {

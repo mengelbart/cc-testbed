@@ -91,6 +91,17 @@ class SingleAnalyzer():
         fig.savefig(name, bbox_inches='tight')
         plt.close(fig)
 
+        fig, ax = plt.subplots(dpi=400)
+        labels = []
+        labels.append(rtpa.plot_departure(ax))
+        labels.append(rtpa.plot_arrival(ax))
+        ax.xaxis.set_major_formatter(EngFormatter(unit='s'))
+        ax.legend(handles=labels)
+        name = os.path.join(self._output, 'rtp_departure_arrival.png')
+        self._plot_files.append(name)
+        fig.savefig(name, bbox_inches='tight')
+        plt.close(fig)
+
         for name, f in {
                 'rtp_latency.png': rtpa.plot_latency,
                 'rtp_loss.png': rtpa.plot_loss,
