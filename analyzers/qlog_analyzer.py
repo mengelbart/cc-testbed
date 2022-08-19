@@ -290,15 +290,7 @@ class QLOGAnalyzer():
                 linewidth=0.5,
             )
             labels.append(l)
-
-        if len(labels) > 0:
-            ax.set_xlabel('Time')
-            ax.set_ylabel('Rate')
-
-            ax.set_title('QLOG Received Rate')
-            ax.xaxis.set_major_formatter(DateFormatter("%M:%S"))
-            ax.yaxis.set_major_formatter(EngFormatter(unit='bit/s'))
-            ax.legend(handles=labels)
+        return labels
 
     def plot_tx_rates(self, ax, params={}):
         labels = []
@@ -329,15 +321,7 @@ class QLOGAnalyzer():
                 linewidth=0.5,
             )
             labels.append(l)
-
-        if len(labels) > 0:
-            ax.set_xlabel('Time')
-            ax.set_ylabel('Rate')
-
-            ax.set_title('QLOG Transmitted Rate')
-            ax.xaxis.set_major_formatter(DateFormatter("%M:%S"))
-            ax.yaxis.set_major_formatter(EngFormatter(unit='bit/s'))
-            ax.legend(handles=labels)
+        return labels
 
     def plot_cwnd(self, ax, params={}):
         labels = []

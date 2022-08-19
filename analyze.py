@@ -9,11 +9,15 @@ import os
 from jinja2 import Environment, FileSystemLoader
 import matplotlib.pyplot as plt
 
+from matplotlib.dates import DateFormatter
+from matplotlib.ticker import EngFormatter
+
 from pathlib import Path
 
-from analyzers.rtp_analyzer import RTPAnalyzer
-from analyzers.qlog_analyzer import QLOGAnalyzer
+from analyzers.link_analyzer import LinkAnalyzer
 from analyzers.pcap_analyzer import PCAPAnalyzer
+from analyzers.qlog_analyzer import QLOGAnalyzer
+from analyzers.rtp_analyzer import RTPAnalyzer
 
 
 class SingleAnalyzer():
@@ -40,40 +44,56 @@ class SingleAnalyzer():
         self._config = c
         self._basetime = c.get('start_time')
 
-        self.analyze_rtp(files)
+        link_analyzer = LinkAnalyzer(self._basetime)
+        link = next((f for f in files if f.endswith('link.log')), None)
+        if link:
+            link_analyzer.add_capacity(link)
+
+        self.analyze_rtp(files, link_analyzer)
         # self.analyze_pcap(files)
-        self.analyze_qlog(files)
+        self.analyze_qlog(files, link_analyzer)
+
         self.save_aggregates()
         self.render_html()
 
-    def analyze_rtp(self, files):
-        a = RTPAnalyzer(self._basetime)
-        link = next((f for f in files if f.endswith('link.log')), None)
-        if link:
-            a.add_capacity(link)
-
+    def analyze_rtp(self, files, link_analyzer):
+        rtpa = RTPAnalyzer(self._basetime)
         target_rate = next((f for f in files if f.endswith('cc.scream')), None)
         if target_rate:
-            a.add_scream_target_rate(target_rate)
+            rtpa.add_scream_target_rate(target_rate)
 
         sent = next((f for f in files if f.endswith('sender.rtp')), None)
         if sent:
-            a.add_outgoing_rtp(sent)
+            rtpa.add_outgoing_rtp(sent)
 
         received = next((f for f in files if f.endswith('receiver.rtp')), None)
         if received:
-            a.add_incoming_rtp(received)
-            self._aggregates['average_goodput'] = a.average_goodput()
+            rtpa.add_incoming_rtp(received)
+            self._aggregates['average_goodput'] = rtpa.average_goodput()
 
         if sent and received:
-            a.add_latency(sent, received)
-            self._aggregates['latency_stats'] = a.latency_stats()
-            a.add_loss(sent, received)
+            rtpa.add_latency(sent, received)
+            self._aggregates['latency_stats'] = rtpa.latency_stats()
+            rtpa.add_loss(sent, received)
+
+        fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
+        labels = []
+        labels.append(link_analyzer.plot_capacity(ax))
+        labels.extend(rtpa.plot_throughput(ax))
+        ax.set_xlabel('Time')
+        ax.set_ylabel('Rate')
+        ax.set_title('RTP Throughput')
+        ax.xaxis.set_major_formatter(DateFormatter("%M:%S"))
+        ax.yaxis.set_major_formatter(EngFormatter(unit='bit/s'))
+        ax.legend(handles=labels)
+        name = os.path.join(self._output, 'rtp_throughput.png')
+        self._plot_files.append(name)
+        fig.savefig(name, bbox_inches='tight')
+        plt.close(fig)
 
         for name, f in {
-                'rtp_throughput.png': a.plot_throughput,
-                'rtp_latency.png': a.plot_latency,
-                'rtp_loss.png': a.plot_loss,
+                'rtp_latency.png': rtpa.plot_latency,
+                'rtp_loss.png': rtpa.plot_loss,
                 }.items():
             fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
             f(ax)
@@ -90,16 +110,38 @@ class SingleAnalyzer():
         a = PCAPAnalyzer()
         a.read(pcap)
 
-    def analyze_qlog(self, files):
+    def plot_qlog_rates(self, qlog_plot_func, link_analyzer, title, filename):
+        labels = []
+        fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
+        labels.extend(qlog_plot_func(ax))
+        labels.append(link_analyzer.plot_capacity(ax))
+        ax.set_xlabel('Time')
+        ax.set_ylabel('Rate')
+        ax.set_title(title)
+        ax.xaxis.set_major_formatter(DateFormatter("%M:%S"))
+        ax.yaxis.set_major_formatter(EngFormatter(unit='bit/s'))
+        ax.legend(handles=labels)
+        fig.tight_layout()
+        name = os.path.join(self._output, filename)
+        self._plot_files.append(name)
+        fig.savefig(name, bbox_inches='tight')
+        plt.close(fig)
+
+    def analyze_qlog(self, files, link_analyzer):
         sf = next((f for f in files if f.endswith('Server.qlog')), None)
         if sf is not None:
             server = QLOGAnalyzer()
             server.read(sf)
 
+            self.plot_qlog_rates(
+                    server.plot_tx_rates, link_analyzer,
+                    'QLOG Server Tx Rates', 'server_qlog_tx_rates.png')
+            self.plot_qlog_rates(
+                    server.plot_rx_rates, link_analyzer,
+                    'QLOG Server Rx Rates', 'server_qlog_rx_rates.png')
+
             for name, f in {
                     'server_qlog_rtt.png': server.plot_rtt,
-                    'server_qlog_tx_rates.png': server.plot_tx_rates,
-                    'server_qlog_rx_rates.png': server.plot_rx_rates,
                     'server_qlog_cwnd.png': server.plot_cwnd,
                     }.items():
                 fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
@@ -115,10 +157,15 @@ class SingleAnalyzer():
             client = QLOGAnalyzer()
             client.read(cf)
 
+            self.plot_qlog_rates(
+                    client.plot_tx_rates, link_analyzer,
+                    'QLOG Client Tx Rates', 'client_qlog_tx_rates.png')
+            self.plot_qlog_rates(
+                    client.plot_rx_rates, link_analyzer,
+                    'QLOG Client Rx Rates', 'client_qlog_rx_rates.png')
+
             for name, f in {
                     'client_qlog_rtt.png': client.plot_rtt,
-                    'client_qlog_tx_rates.png': client.plot_tx_rates,
-                    'client_qlog_rx_rates.png': client.plot_rx_rates,
                     'client_qlog_cwnd.png': client.plot_cwnd,
                     }.items():
                 fig, ax = plt.subplots(figsize=(8, 2), dpi=400)

@@ -24,16 +24,6 @@ def read_rtcp(file):
     )
 
 
-def read_capacity(file):
-    return pd.read_csv(
-        file,
-        index_col=0,
-        names=['time', 'bandwidth'],
-        header=None,
-        usecols=[0, 2],
-    )
-
-
 def read_scream_target_rate(file):
     return pd.read_csv(
         file,
@@ -65,10 +55,6 @@ class RTPAnalyzer():
         df = self.set_basetime(df)
         df['rate'] = df['rate'].apply(lambda x: x * 8)
         self._incoming_rtp = df.resample('1s').sum()
-
-    def add_capacity(self, file):
-        df = read_capacity(file)
-        self._capacity = self.set_basetime(df)
 
     def add_outgoing_rtcp(self, file):
         df = read_rtcp(file)
@@ -148,19 +134,6 @@ class RTPAnalyzer():
 
     def plot_throughput(self, ax, params={}):
         labels = []
-
-        defaults = {
-                'linewidth': 0.5,
-                'label': 'Capacity',
-                }
-        p = defaults | params
-        out, = ax.step(
-                self._capacity.index,
-                self._capacity.values,
-                where='post',
-                **p)
-        labels.append(out)
-
         for label, data in {
                 'Target Rate': self._scream_target_rate,
                 'Transmitted RTP': self._outgoing_rtp,
@@ -175,12 +148,7 @@ class RTPAnalyzer():
                 out, = ax.plot(data, **p)
                 labels.append(out)
 
-        ax.set_xlabel('Time')
-        ax.set_ylabel('Rate')
-        ax.set_title('RTP Throughput')
-        ax.xaxis.set_major_formatter(DateFormatter("%M:%S"))
-        ax.yaxis.set_major_formatter(EngFormatter(unit='bit/s'))
-        ax.legend(handles=labels)
+        return labels
 
     def plot_latency(self, ax, params={}):
         if self._latency is not None:
