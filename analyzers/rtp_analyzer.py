@@ -195,6 +195,13 @@ class RTPAnalyzer():
             ax.set_xlabel('Sequence Number')
             ax.yaxis.set_major_formatter(EngFormatter(unit='s'))
 
+    def plot_latency_hist(self, ax, params={}):
+        ax.hist(
+                self._latency['diff'],
+                cumulative=False,
+                bins=1000,
+                density=False)
+
     def plot_loss(self, ax, params={}):
         if self._loss is not None:
             defaults = {

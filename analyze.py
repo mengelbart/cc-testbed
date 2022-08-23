@@ -6,8 +6,10 @@ import json
 import multiprocessing
 import os
 
-from jinja2 import Environment, FileSystemLoader
+import pandas as pd
 import matplotlib.pyplot as plt
+
+from jinja2 import Environment, FileSystemLoader
 
 from matplotlib.dates import DateFormatter
 from matplotlib.ticker import EngFormatter
@@ -98,6 +100,51 @@ class SingleAnalyzer():
         ax.xaxis.set_major_formatter(EngFormatter(unit='s'))
         ax.legend(handles=labels)
         name = os.path.join(self._output, 'rtp_departure_arrival.png')
+        self._plot_files.append(name)
+        fig.savefig(name, bbox_inches='tight')
+        plt.close(fig)
+
+        fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
+        rtpa.plot_latency_hist(ax)
+        ax.set_title('RTP packet latency Histogram')
+        name = os.path.join(self._output, 'rtp_latency_hist.png')
+        self._plot_files.append(name)
+        fig.savefig(name, bbox_inches='tight')
+        plt.close(fig)
+
+        # TODO: Use pcap instead of RTP to calculate utilization?
+        rate = rtpa._incoming_rtp.copy()
+        rate['rate'] = rate['rate'].apply(lambda x: x * 8)
+        rate = rate.resample('1s').sum()
+
+        link = link_analyzer._capacity.copy()
+        link = link.resample('1s').ffill()
+        df = pd.concat(
+                [
+                    rate['rate'],
+                    link['bandwidth'],
+                ],
+                axis=1,
+                keys=['rate', 'bandwidth'])
+        df['utilization'] = df['rate'] / df['bandwidth']
+        fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
+        defaults = {
+            'linewidth': 0.5,
+            'label': 'RTP Utilization',
+        }
+        label, = ax.plot(df.utilization, **defaults)
+        ax.legend(handles=[label])
+        ax.set_title('RTP utilization')
+        name = os.path.join(self._output, 'rtp_utilization.png')
+        self._plot_files.append(name)
+        fig.savefig(name, bbox_inches='tight')
+        plt.close(fig)
+
+        fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
+        ax.hist(df.utilization, cumulative=True, density=False,
+                bins=len(df.utilization))
+        ax.set_title('RTP Utilization Histogram')
+        name = os.path.join(self._output, 'rtp_utilization_hist.png')
         self._plot_files.append(name)
         fig.savefig(name, bbox_inches='tight')
         plt.close(fig)
