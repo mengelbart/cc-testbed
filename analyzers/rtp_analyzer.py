@@ -101,6 +101,7 @@ class RTPAnalyzer():
         )
         df = df_sent.merge(df_received, on='nr')
         df['diff'] = (df['time_receive'] - df['time_send']) / 1000.0
+        df.index = pd.to_datetime(df['time_send'] - self._basetime, unit='ms')
         df = df.drop(['time_send', 'time_receive'], axis=1)
         self._latency = df
 
@@ -214,7 +215,7 @@ class RTPAnalyzer():
             ax.scatter(self._latency.index, self._latency.values, **p)
             ax.set_title('RTP Packet Latency')
             ax.set_ylabel('Latency')
-            ax.set_xlabel('Sequence Number')
+            ax.set_xlabel('Time')
             ax.yaxis.set_major_formatter(EngFormatter(unit='s'))
 
     def plot_latency_hist(self, ax, params={}):
