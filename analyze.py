@@ -6,6 +6,7 @@ import json
 import multiprocessing
 import os
 
+import datetime as dt
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -60,9 +61,15 @@ class SingleAnalyzer():
 
     def analyze_rtp(self, files, link_analyzer):
         rtpa = RTPAnalyzer(self._basetime)
-        target_rate = next((f for f in files if f.endswith('cc.scream')), None)
-        if target_rate:
-            rtpa.add_scream_target_rate(target_rate)
+        scream_target_rate = next(
+                (f for f in files if f.endswith('cc.scream')), None)
+        if scream_target_rate:
+            rtpa.add_scream_target_rate(scream_target_rate)
+
+        gcc_target_rate = next(
+                (f for f in files if f.endswith('cc.gcc')), None)
+        if gcc_target_rate:
+            rtpa.add_gcc_target_rate(gcc_target_rate)
 
         sent = next((f for f in files if f.endswith('sender.rtp')), None)
         if sent:

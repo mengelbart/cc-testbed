@@ -34,9 +34,21 @@ def read_scream_target_rate(file):
     )
 
 
+def read_gcc_target_rate(file):
+    return pd.read_csv(
+        file,
+        index_col=0,
+        names=['time', 'target'],
+        header=None,
+        usecols=[0, 1]
+    )
+
+
 class RTPAnalyzer():
     def __init__(self, basetime):
         self._basetime = basetime
+        self._scream_target_rate = None
+        self._gcc_target_rate = None
 
     def set_basetime(self, df):
         if not self._basetime:
@@ -67,6 +79,10 @@ class RTPAnalyzer():
     def add_scream_target_rate(self, file):
         df = read_scream_target_rate(file)
         self._scream_target_rate = self.set_basetime(df)
+
+    def add_gcc_target_rate(self, file):
+        df = read_gcc_target_rate(file)
+        self._gcc_target_rate = self.set_basetime(df)
 
     def add_latency(self, sent, received):
         df_sent = pd.read_csv(
@@ -166,8 +182,14 @@ class RTPAnalyzer():
         incoming_rtp['rate'] = incoming_rtp['rate'].apply(lambda x: x * 8)
         incoming_rtp = incoming_rtp.resample('1s').sum()
 
+        target_rate = None
+        if self._scream_target_rate is not None:
+            target_rate = self._scream_target_rate
+        if self._gcc_target_rate is not None:
+            target_rate = self._gcc_target_rate
+
         for label, data in {
-                'Target Rate': self._scream_target_rate,
+                'Target Rate': target_rate,
                 'Transmitted RTP': outgoing_rtp,
                 'Received RTP': incoming_rtp,
                 }.items():

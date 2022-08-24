@@ -1,3 +1,6 @@
 [submodule "third_party/rtp-over-quic"]
 	path = third_party/rtp-over-quic
 	url = https://github.com/mengelbart/rtp-over-quic.git
+[submodule "third_party/bwe-test-pion"]
+	path = third_party/bwe-test-pion
+	url = git@github.com:pion/bwe-test.git

@@ -65,13 +65,13 @@ class RTPoverQUICBuilder(FlowBuilder):
 
     def build(self, id, log_dir):
         return RTPoverQUIC(
-                id,
-                self._server_node,
-                self._receiver_node,
-                self._delay,
-                log_dir,
-                self._config,
-                )
+            id,
+            self._server_node,
+            self._receiver_node,
+            self._delay,
+            log_dir,
+            self._config,
+        )
 
 
 class RTPoverQUIC(Flow):
