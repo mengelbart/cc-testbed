@@ -17,7 +17,7 @@
         stream: [True, False]
         transport: 
           - protocol: 'quic'
-            cc: 'newreno'
+            cc: 'reno'
           - protocol: 'quic'
             cc: 'none'
           - protocol: 'udp'
@@ -51,7 +51,7 @@
         stream: [False]
         transport: 
           - protocol: 'quic'
-            cc: 'newreno'
+            cc: 'reno'
           - protocol: 'quic'
             cc: 'none'
           - protocol: 'udp'
@@ -75,7 +75,7 @@
         stream: [False]
         transport: 
           - protocol: 'quic'
-            cc: 'newreno'
+            cc: 'reno'
           - protocol: 'quic'
             cc: 'none'
           - protocol: 'udp'
@@ -109,7 +109,7 @@
         stream: [False]
         transport: 
           - protocol: 'quic'
-            cc: 'newreno'
+            cc: 'reno'
           - protocol: 'quic'
             cc: 'none'
           - protocol: 'udp'
@@ -133,7 +133,7 @@
         stream: [False]
         transport: 
           - protocol: 'quic'
-            cc: 'newreno'
+            cc: 'reno'
           - protocol: 'quic'
             cc: 'none'
           - protocol: 'udp'
@@ -167,7 +167,7 @@
         stream: [False]
         transport: 
           - protocol: 'quic'
-            cc: 'newreno'
+            cc: 'reno'
           - protocol: 'quic'
             cc: 'none'
           - protocol: 'udp'
