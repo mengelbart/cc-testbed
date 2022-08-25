@@ -183,8 +183,8 @@
           input: input/input.y4m
     - name: Iperf3
       module: iperf3
-      server_node: l0
-      receiver_node: r0
+      server_node: l1
+      receiver_node: r1
       delay: 0
       config:
         congestion_control_algorithm: [reno, cubic, bbr]
