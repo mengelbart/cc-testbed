@@ -15,6 +15,7 @@ from queue import Queue
 from mininet.clean import cleanup
 from mininet.log import setLogLevel
 from mininet.net import Mininet
+from mininet.util import dumpNodeConnections
 
 import flow
 import emulation
@@ -46,8 +47,9 @@ class Test:
         self.emulation: emulation.Emulation = config.emulation
 
     def setup_network(self):
-        topo = self.emulation.topology()
+        topo = self.emulation.topology(2 * len(self.flows))
         self.net = Mininet(topo=topo, autoStaticArp=True)
+        dumpNodeConnections(self.net.hosts)
         self.net.start()
 
     def start_flows(self, q, e):

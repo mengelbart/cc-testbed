@@ -36,8 +36,8 @@ class VariableAvailableCapacity(Emulation):
                 ]
         self._remaining_configs = self._link_configs
 
-    def topology(self):
-        return DumbbellTopo(n=1)
+    def topology(self, n=1):
+        return DumbbellTopo(n=n)
 
     @staticmethod
     def builders(config):
