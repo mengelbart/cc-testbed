@@ -120,13 +120,15 @@ class RTPoverQUIC(Flow):
 
     def config_json(self):
         return {
-                'sender_config': self._config.sender_config._asdict(),
-                'receiver_config': self._config.receiver_config._asdict(),
-                'rtp_cc': self._config.rtp_cc._asdict(),
-                'transport': self._config.transport._asdict(),
-                'codec': self._config.codec,
-                'stream': self._config.stream,
-            }
+            'sender_config': self._config.sender_config._asdict(),
+            'receiver_config': self._config.receiver_config._asdict(),
+            'rtp_cc': self._config.rtp_cc._asdict(),
+            'transport': self._config.transport._asdict(),
+            'codec': self._config.codec,
+            'stream': self._config.stream,
+            'log_dir': self._log_dir,
+            'id': self._id,
+        }
 
     def cleanup(self):
         dst = os.path.join(self._log_dir, self._config.receiver_config.output)

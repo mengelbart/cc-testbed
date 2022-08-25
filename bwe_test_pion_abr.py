@@ -49,6 +49,13 @@ class PionABR(Flow):
             PionABRConfig(**config),
         )]
 
+    def config_json(self):
+        return {
+            'config': self._config._asdict(),
+            'log_dir': self._log_dir,
+            'id': self._id,
+        }
+
     def server_cmd(self, addr, port):
         cmd = [
             self._config.cmd,
@@ -75,6 +82,3 @@ class PionABR(Flow):
             '-cc-log', f'{self._log_dir}/cc.gcc',
         ]
         return cmd
-
-    def config_json(self):
-        pass
