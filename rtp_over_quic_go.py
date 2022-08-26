@@ -133,7 +133,7 @@ class RTPoverQUIC(Flow):
         src = self._config.sender_config.input
         out = self._log_dir
         if os.path.isfile(src) and os.path.isfile(dst):
-            ffmpeg_vmaf = f'ffmpeg -i {dst} -i {src} '\
+            ffmpeg_vmaf = f'ffmpeg -hide_banner -i {dst} -i {src} '\
                     f'-lavfi libvmaf=log_fmt=csv:' \
                     f'log_path={out}/video_quality.csv:' \
                     'psnr=1:ssim=1:eof_action=endall '\
