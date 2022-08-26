@@ -47,7 +47,7 @@ class Test:
         self.emulation: emulation.Emulation = config.emulation
 
     def setup_network(self):
-        topo = self.emulation.topology(2 * len(self.flows))
+        topo = self.emulation.topology(len(self.flows))
         self.net = Mininet(topo=topo, autoStaticArp=True)
         dumpNodeConnections(self.net.hosts)
         self.net.start()

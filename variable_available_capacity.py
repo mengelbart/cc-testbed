@@ -62,8 +62,8 @@ class VariableAvailableCapacity(Emulation):
 
     def init_link_emulation(self, net):
         s1, s2 = net.getNodeByName('ls1', 'rs1')
-        self.s1_iface = s1.intf('ls1-eth2')
-        self.s2_iface = s2.intf('rs1-eth2')
+        self.s1_iface = s1.intf('ls1-eth1')
+        self.s2_iface = s2.intf('rs1-eth1')
 
         config = self._remaining_configs[0]
         self.update_link(config)
