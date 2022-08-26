@@ -14,13 +14,8 @@
       delay: 0
       config:
         codec: ['h264']
-        stream: [False]
         transport: 
           - protocol: 'quic'
-            cc: 'reno'
-          - protocol: 'quic'
-            cc: 'none'
-          - protocol: 'udp'
             cc: 'none'
         rtp_cc:
           - rtp_cc: 'scream'

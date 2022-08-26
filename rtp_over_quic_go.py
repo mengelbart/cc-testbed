@@ -40,6 +40,7 @@ class RTPCongestionControlConfig(NamedTuple):
 class RTPTransportConfig(NamedTuple):
     protocol: str = 'quic'
     cc: str = 'reno'
+    stream: bool = False
 
 
 class RTPoverQUICCommonConfig(NamedTuple):
@@ -48,7 +49,6 @@ class RTPoverQUICCommonConfig(NamedTuple):
     rtp_cc: RTPCongestionControlConfig
     transport: RTPTransportConfig
     codec: str = 'h264'
-    stream: bool = False
 
 
 class RTPoverQUICBuilder(FlowBuilder):
@@ -96,13 +96,11 @@ class RTPoverQUIC(Flow):
             config,
             ) -> [FlowBuilder]:
         codecs = config['codec']
-        streams = config['stream']
         transports = config['transport']
         rtp_ccs = config['rtp_cc']
-        configs = itertools.product(
-                codecs, streams, transports, rtp_ccs)
+        configs = itertools.product(codecs, transports, rtp_ccs)
 
-        return [RTPoverQUICBuilder(
+        builders = [RTPoverQUICBuilder(
             server_node,
             receiver_node,
             delay,
@@ -111,12 +109,12 @@ class RTPoverQUIC(Flow):
                     **config.get('sender_config', {})),
                 receiver_config=RTPoverQUICReceiverConfig(
                     **config.get('receiver_config', {})),
-                rtp_cc=RTPCongestionControlConfig(**c[3]),
-                transport=RTPTransportConfig(**c[2]),
+                rtp_cc=RTPCongestionControlConfig(**c[2]),
+                transport=RTPTransportConfig(**c[1]),
                 codec=c[0],
-                stream=c[1],
                 ),
             ) for c in configs]
+        return builders
 
     def config_json(self):
         return {
@@ -125,7 +123,7 @@ class RTPoverQUIC(Flow):
             'rtp_cc': self._config.rtp_cc._asdict(),
             'transport': self._config.transport._asdict(),
             'codec': self._config.codec,
-            'stream': self._config.stream,
+            'stream': self._config.transport.stream,
             'log_dir': self._log_dir,
             'id': self._id,
         }
@@ -173,7 +171,7 @@ class RTPoverQUIC(Flow):
                 '--transport', self._config.transport.protocol,
                 '--rtp-cc', self._config.rtp_cc.rtp_cc,
             ]
-        if self._config.stream:
+        if self._config.transport.stream:
             cmd.append('--stream')
         if self._config.rtp_cc.local_rfc8888:
             cmd.append('--local-rfc8888')
