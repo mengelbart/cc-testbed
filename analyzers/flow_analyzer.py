@@ -157,6 +157,7 @@ class SingleFlowAnalyzer():
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
         self.plot_rtp_throughput()
         self.plot_rtp_departure_arrival()
+        self.plot_rtp_loss()
         self.plot_rtp_latency_hist()
         self.plot_qlog()
 
@@ -273,7 +274,7 @@ class SingleFlowAnalyzer():
         defaults = {
             'linewidth': 0.5,
         }
-        ax.plot(self._loss, **defaults)
+        ax.plot(self.loss, **defaults)
         ax.set_title('RTP Loss Rate')
         ax.set_xlabel('Time')
         ax.set_ylabel('Loss Rate')
