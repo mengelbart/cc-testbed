@@ -158,6 +158,7 @@ class SingleFlowAnalyzer():
         self.plot_rtp_throughput()
         self.plot_rtp_departure_arrival()
         self.plot_rtp_loss()
+        self.plot_rtp_latency()
         self.plot_rtp_latency_hist()
         self.plot_qlog()
 
@@ -259,7 +260,7 @@ class SingleFlowAnalyzer():
            's': 0.1,
            'linewidths': 0.5,
         }
-        ax.scatter(self._latency.index, self._latency.values, **defaults)
+        ax.scatter(self.latency.index, self.latency.values, **defaults)
         ax.set_title('RTP Packet Latency')
         ax.set_ylabel('Latency')
         ax.set_xlabel('Time')
