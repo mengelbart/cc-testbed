@@ -6,24 +6,25 @@ import json
 import multiprocessing
 import os
 
-import datetime as dt
 import pandas as pd
-import matplotlib.pyplot as plt
 
+from analyzers.pcap_analyzer import PCAPAnalyzer
+from analyzers.flow_analyzer import SingleFlowAnalyzer
 from jinja2 import Environment, FileSystemLoader
-
-from matplotlib.dates import DateFormatter
-from matplotlib.ticker import EngFormatter
-
 from pathlib import Path
 
-from analyzers.link_analyzer import LinkAnalyzer
-from analyzers.pcap_analyzer import PCAPAnalyzer
-from analyzers.qlog_analyzer import QLOGAnalyzer
-from analyzers.rtp_analyzer import RTPAnalyzer
+
+def read_capacity(file):
+    return pd.read_csv(
+        file,
+        index_col=0,
+        names=['time', 'bandwidth'],
+        header=None,
+        usecols=[0, 2],
+    )
 
 
-class SingleAnalyzer():
+class SingleExperimentAnalyzer():
     def __init__(self, input_dir, output_dir):
         self._directory = input_dir
         self._output = output_dir
@@ -47,125 +48,30 @@ class SingleAnalyzer():
         self._config = c
         self._basetime = c.get('start_time')
 
-        link_analyzer = LinkAnalyzer(self._basetime)
-        link = next((f for f in files if f.endswith('link.log')), None)
-        if link:
-            link_analyzer.add_capacity(link)
+        link_file = next((f for f in files if f.endswith('link.log')), None)
+        if link_file:
+            link = read_capacity(link_file)
+            link.index = pd.to_datetime(link.index - self._basetime, unit='ms')
 
-        self.analyze_rtp(files, link_analyzer)
+        flows = [flow for flow in c['flows']]
+        flow_plots = []
+        for flow in flows:
+            out = os.path.join(self._output, str(flow['id']))
+            fa = SingleFlowAnalyzer(flow, out, self._basetime)
+            fa.set_link_capacity(link)
+            fa.analyze()
+            fa.plot()
+            flow_plots.append({
+                'id': str(flow['id']),
+                'plots': [{
+                    'file_name': Path(pf).relative_to(Path(self._output)),
+                } for pf in fa.plot_files],
+            })
+
         # self.analyze_pcap(files)
-        self.analyze_qlog(files, link_analyzer)
 
         self.save_aggregates()
-        self.render_html()
-
-    def analyze_rtp(self, files, link_analyzer):
-        rtpa = RTPAnalyzer(self._basetime)
-        scream_target_rate = next(
-                (f for f in files if f.endswith('cc.scream')), None)
-        if scream_target_rate:
-            rtpa.add_scream_target_rate(scream_target_rate)
-
-        gcc_target_rate = next(
-                (f for f in files if f.endswith('cc.gcc')), None)
-        if gcc_target_rate:
-            rtpa.add_gcc_target_rate(gcc_target_rate)
-
-        sent = next((f for f in files if f.endswith('sender.rtp')), None)
-        if sent:
-            rtpa.add_outgoing_rtp(sent)
-
-        received = next((f for f in files if f.endswith('receiver.rtp')), None)
-        if received:
-            rtpa.add_incoming_rtp(received)
-            self._aggregates['average_goodput'] = rtpa.average_goodput()
-
-        if sent and received:
-            rtpa.add_latency(sent, received)
-            self._aggregates['latency_stats'] = rtpa.latency_stats()
-            rtpa.add_loss(sent, received)
-
-        fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
-        labels = []
-        labels.append(link_analyzer.plot_capacity(ax))
-        labels.extend(rtpa.plot_throughput(ax))
-        ax.set_xlabel('Time')
-        ax.set_ylabel('Rate')
-        ax.set_title('RTP Throughput')
-        ax.xaxis.set_major_formatter(DateFormatter("%M:%S"))
-        ax.yaxis.set_major_formatter(EngFormatter(unit='bit/s'))
-        ax.legend(handles=labels)
-        name = os.path.join(self._output, 'rtp_throughput.png')
-        self._plot_files.append(name)
-        fig.savefig(name, bbox_inches='tight')
-        plt.close(fig)
-
-        fig, ax = plt.subplots(dpi=400)
-        labels = []
-        labels.append(rtpa.plot_departure(ax))
-        labels.append(rtpa.plot_arrival(ax))
-        ax.xaxis.set_major_formatter(EngFormatter(unit='s'))
-        ax.legend(handles=labels)
-        name = os.path.join(self._output, 'rtp_departure_arrival.png')
-        self._plot_files.append(name)
-        fig.savefig(name, bbox_inches='tight')
-        plt.close(fig)
-
-        fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
-        rtpa.plot_latency_hist(ax)
-        ax.set_title('RTP packet latency Histogram')
-        name = os.path.join(self._output, 'rtp_latency_hist.png')
-        self._plot_files.append(name)
-        fig.savefig(name, bbox_inches='tight')
-        plt.close(fig)
-
-        # TODO: Use pcap instead of RTP to calculate utilization?
-        rate = rtpa._incoming_rtp.copy()
-        rate['rate'] = rate['rate'].apply(lambda x: x * 8)
-        rate = rate.resample('1s').sum()
-
-        link = link_analyzer._capacity.copy()
-        link = link.resample('1s').ffill()
-        df = pd.concat(
-                [
-                    rate['rate'],
-                    link['bandwidth'],
-                ],
-                axis=1,
-                keys=['rate', 'bandwidth'])
-        df['utilization'] = df['rate'] / df['bandwidth']
-        fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
-        defaults = {
-            'linewidth': 0.5,
-            'label': 'RTP Utilization',
-        }
-        label, = ax.plot(df.utilization, **defaults)
-        ax.legend(handles=[label])
-        ax.set_title('RTP utilization')
-        name = os.path.join(self._output, 'rtp_utilization.png')
-        self._plot_files.append(name)
-        fig.savefig(name, bbox_inches='tight')
-        plt.close(fig)
-
-        fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
-        ax.hist(df.utilization, cumulative=True, density=False,
-                bins=len(df.utilization))
-        ax.set_title('RTP Utilization Histogram')
-        name = os.path.join(self._output, 'rtp_utilization_hist.png')
-        self._plot_files.append(name)
-        fig.savefig(name, bbox_inches='tight')
-        plt.close(fig)
-
-        for name, f in {
-                'rtp_latency.png': rtpa.plot_latency,
-                'rtp_loss.png': rtpa.plot_loss,
-                }.items():
-            fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
-            f(ax)
-            name = os.path.join(self._output, name)
-            self._plot_files.append(name)
-            fig.savefig(name, bbox_inches='tight')
-            plt.close(fig)
+        self.render_html(flow_plots)
 
     def analyze_pcap(self, files):
         pcap = next((f for f in files if f.endswith('ls1-eth1.pcap')), None)
@@ -175,86 +81,18 @@ class SingleAnalyzer():
         a = PCAPAnalyzer()
         a.read(pcap)
 
-    def plot_qlog_rates(self, qlog_plot_func, link_analyzer, title, filename):
-        labels = []
-        fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
-        labels.extend(qlog_plot_func(ax))
-        labels.append(link_analyzer.plot_capacity(ax))
-        ax.set_xlabel('Time')
-        ax.set_ylabel('Rate')
-        ax.set_title(title)
-        ax.xaxis.set_major_formatter(DateFormatter("%M:%S"))
-        ax.yaxis.set_major_formatter(EngFormatter(unit='bit/s'))
-        ax.legend(handles=labels)
-        fig.tight_layout()
-        name = os.path.join(self._output, filename)
-        self._plot_files.append(name)
-        fig.savefig(name, bbox_inches='tight')
-        plt.close(fig)
-
-    def analyze_qlog(self, files, link_analyzer):
-        sf = next((f for f in files if f.endswith('Server.qlog')), None)
-        if sf is not None:
-            server = QLOGAnalyzer()
-            server.read(sf)
-
-            self.plot_qlog_rates(
-                    server.plot_tx_rates, link_analyzer,
-                    'QLOG Server Tx Rates', 'server_qlog_tx_rates.png')
-            self.plot_qlog_rates(
-                    server.plot_rx_rates, link_analyzer,
-                    'QLOG Server Rx Rates', 'server_qlog_rx_rates.png')
-
-            for name, f in {
-                    'server_qlog_rtt.png': server.plot_rtt,
-                    'server_qlog_cwnd.png': server.plot_cwnd,
-                    }.items():
-                fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
-                f(ax)
-                fig.tight_layout()
-                name = os.path.join(self._output, name)
-                self._plot_files.append(name)
-                fig.savefig(name, bbox_inches='tight')
-                plt.close(fig)
-
-        cf = next((f for f in files if f.endswith('Client.qlog')), None)
-        if cf is not None:
-            client = QLOGAnalyzer()
-            client.read(cf)
-
-            self.plot_qlog_rates(
-                    client.plot_tx_rates, link_analyzer,
-                    'QLOG Client Tx Rates', 'client_qlog_tx_rates.png')
-            self.plot_qlog_rates(
-                    client.plot_rx_rates, link_analyzer,
-                    'QLOG Client Rx Rates', 'client_qlog_rx_rates.png')
-
-            for name, f in {
-                    'client_qlog_rtt.png': client.plot_rtt,
-                    'client_qlog_cwnd.png': client.plot_cwnd,
-                    }.items():
-                fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
-                f(ax)
-                fig.tight_layout()
-                name = os.path.join(self._output, name)
-                self._plot_files.append(name)
-                fig.savefig(name, bbox_inches='tight')
-                plt.close(fig)
-
     def save_aggregates(self):
         filename = os.path.join(self._output, 'aggregates.json')
         with open(filename, mode='w', encoding='utf-8') as f:
             json.dump(self._aggregates, f)
 
-    def render_html(self):
+    def render_html(self, flows):
         environment = Environment(loader=FileSystemLoader('templates/'))
         environment.filters['tojson_pretty'] = to_pretty_json
         template = environment.get_template('experiment.html')
-        plots = [{
-            'file_name': Path(f).name,
-            } for f in self._plot_files]
+
         context = {
-            'plots': plots,
+            'flows': flows,
             'config': self._config,
         }
         content = template.render(context)
@@ -311,7 +149,7 @@ def create_index(args):
 
 def run_single(args):
     Path(args['output_dir']).mkdir(parents=True, exist_ok=True)
-    SingleAnalyzer(args['input_dir'], args['output_dir']).analyze()
+    SingleExperimentAnalyzer(args['input_dir'], args['output_dir']).analyze()
 
 
 def analyze_single(args):
