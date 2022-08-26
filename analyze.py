@@ -56,17 +56,18 @@ class SingleExperimentAnalyzer():
         flows = [flow for flow in c['flows']]
         flow_plots = []
         for flow in flows:
-            out = os.path.join(self._output, str(flow['id']))
-            fa = SingleFlowAnalyzer(flow, out, self._basetime)
-            fa.set_link_capacity(link)
-            fa.analyze()
-            fa.plot()
-            flow_plots.append({
-                'id': str(flow['id']),
-                'plots': [{
-                    'file_name': Path(pf).relative_to(Path(self._output)),
-                } for pf in fa.plot_files],
-            })
+            if 'id' in flow:
+                out = os.path.join(self._output, str(flow['id']))
+                fa = SingleFlowAnalyzer(flow, out, self._basetime)
+                fa.set_link_capacity(link)
+                fa.analyze()
+                fa.plot()
+                flow_plots.append({
+                    'id': str(flow['id']),
+                    'plots': [{
+                        'file_name': Path(pf).relative_to(Path(self._output)),
+                    } for pf in fa.plot_files],
+                })
 
         # self.analyze_pcap(files)
 
