@@ -3,9 +3,9 @@
     name: VariableAvailableCapacity
     module: variable_available_capacity
     config:
-      loss: [0, 0.1, 0.5, 1.0, 2.0, 5.0]
-      delay: [0, 50, 100, 150]
-      latency: [300]
+      loss: [0]
+      delay: [100]
+      latency: [150]
   flows:
     - name: RTPoverQUIC
       module: rtp_over_quic_go
@@ -36,14 +36,30 @@
         sender_config:
           input: input/input.y4m
 
+- # Variable Available Capacity with a Single Flow
+  emulation:
+    name: VariableAvailableCapacity
+    module: variable_available_capacity
+    config:
+      loss: [0]
+      delay: [100]
+      latency: [150]
+  flows:
+    - name: PionABR
+      module: bwe_test_pion_abr
+      server_node: l0
+      receiver_node: r0
+      delay: 0
+      config: {}
+
 - # Variable Available Capacity with Multiple Flows
   emulation:
     name: VariableAvailableCapacity
     module: variable_available_capacity
     config:
-      loss: [0, 0.1, 0.5, 1.0, 2.0, 5.0]
-      delay: [0, 50, 100, 150]
-      latency: [300]
+      loss: [0]
+      delay: [100]
+      latency: [150]
   flows:
     - name: RTPoverQUIC
       module: rtp_over_quic_go
@@ -102,14 +118,36 @@
         sender_config:
           input: input/input.y4m
 
+- # Variable Available Capacity with Multiple Flows
+  emulation:
+    name: VariableAvailableCapacity
+    module: variable_available_capacity
+    config:
+      loss: [0]
+      delay: [100]
+      latency: [150]
+  flows:
+    - name: PionABR
+      module: bwe_test_pion_abr
+      server_node: l0
+      receiver_node: r0
+      delay: 0
+      config: {}
+    - name: PionABR
+      module: bwe_test_pion_abr
+      server_node: l1
+      receiver_node: r1
+      delay: 0
+      config: {}
+
 - # Congested Feedback Link with Bi-directional Media Flows
   emulation:
     name: VariableAvailableCapacity
     module: variable_available_capacity
     config:
-      loss: [0, 0.1, 0.5, 1.0, 2.0, 5.0]
-      delay: [0, 50, 100, 150]
-      latency: [300]
+      loss: [0]
+      delay: [100]
+      latency: [150]
   flows:
     - name: RTPoverQUIC
       module: rtp_over_quic_go
@@ -168,14 +206,36 @@
         sender_config:
           input: input/input.y4m
 
+- # Congested Feedback Link with Bi-directional Media Flows
+  emulation:
+    name: VariableAvailableCapacity
+    module: variable_available_capacity
+    config:
+      loss: [0]
+      delay: [100]
+      latency: [150]
+  flows:
+    - name: PionABR
+      module: bwe_test_pion_abr
+      server_node: l0
+      receiver_node: r0
+      delay: 0
+      config: {}
+    - name: PionABR
+      module: bwe_test_pion_abr
+      server_node: r1
+      receiver_node: l1
+      delay: 0
+      config: {}
+
 - # Media Flow Competing with a Long TCP Flow
   emulation:
     name: VariableAvailableCapacity
     module: variable_available_capacity
     config:
-      loss: [0, 0.1, 0.5, 1.0, 2.0, 5.0]
-      delay: [0, 50, 100, 150]
-      latency: [300]
+      loss: [0]
+      delay: [100]
+      latency: [150]
   flows:
     - name: RTPoverQUIC
       module: rtp_over_quic_go
@@ -205,6 +265,30 @@
             local_rfc8888: True
         sender_config:
           input: input/input.y4m
+    - name: Iperf3
+      module: iperf3
+      server_node: l1
+      receiver_node: r1
+      delay: 0
+      config:
+        congestion_control_algorithm: [reno, cubic, bbr]
+        duration: 100
+
+- # Media Flow Competing with a Long TCP Flow
+  emulation:
+    name: VariableAvailableCapacity
+    module: variable_available_capacity
+    config:
+      loss: [0]
+      delay: [100]
+      latency: [150]
+  flows:
+    - name: PionABR
+      module: bwe_test_pion_abr
+      server_node: l0
+      receiver_node: r0
+      delay: 0
+      config: {}
     - name: Iperf3
       module: iperf3
       server_node: l1
