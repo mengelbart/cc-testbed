@@ -133,7 +133,7 @@ def create_index(args):
     paths = [{
         'path': Path(d).relative_to(root),
         'config': read_config(os.path.join(d, 'config.json')),
-    } for d in dirs]
+    } for d in sorted(dirs)]
     experiments = [{
         'link': os.path.join(p['path'], 'index.html'),
         'name': str(p['path']),
