@@ -6,14 +6,10 @@ from flow import Flow, FlowBuilder
 class Iperf3Builder(FlowBuilder):
     def __init__(
             self,
-            server_node,
-            receiver_node,
             delay,
             congestion_control_algorithm,
             duration,
             ):
-        self._server_node = server_node
-        self._receiver_node = receiver_node
         self._delay = delay
         self._congestion_control_algorithm = congestion_control_algorithm
         self._duration = duration
@@ -21,12 +17,14 @@ class Iperf3Builder(FlowBuilder):
     def build(
             self,
             id,
+            server_node,
+            receiver_node,
             log_dir,
             ) -> Flow:
         return Iperf3(
                 id,
-                self._server_node,
-                self._receiver_node,
+                server_node,
+                receiver_node,
                 self._delay,
                 log_dir,
                 self._congestion_control_algorithm,
@@ -52,15 +50,11 @@ class Iperf3(Flow):
 
     @staticmethod
     def builders(
-            server_node,
-            receiver_node,
             delay,
             config,
             ) -> [FlowBuilder]:
         return [
             Iperf3Builder(
-                server_node,
-                receiver_node,
                 delay,
                 cc, config['duration'],
                 ) for

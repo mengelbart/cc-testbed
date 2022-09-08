@@ -1,24 +1,32 @@
-- # Variable Available Capacity with a Single Flow
+c-0: # Variable Available Capacity with a Single Flow
   emulation:
     name: VariableAvailableCapacity
     module: variable_available_capacity
     config:
-      loss: [0]
+      loss: [0, 0.1, 0.5, 1, 2, 5]
       delay: [100]
       latency: [150]
   flows:
     - name: RTPoverQUIC
       module: rtp_over_quic_go
-      server_node: l0
-      receiver_node: r0
+      server_side: l
+      receiver_side: r
       delay: 0
       config:
         codec: ['h264']
         stream: [True, False]
         transport: 
-          - protocol: 'quic'
+          - protocol: 'quic-dgram'
             cc: 'reno'
-          - protocol: 'quic'
+          - protocol: 'quic-dgram'
+            cc: 'none'
+          - protocol: 'quic-stream'
+            cc: 'reno'
+          - protocol: 'quic-stream'
+            cc: 'none'
+          - protocol: 'quic-prio'
+            cc: 'reno'
+          - protocol: 'quic-prio'
             cc: 'none'
           - protocol: 'udp'
             cc: 'none'
@@ -32,43 +40,111 @@
         sender_config:
           input: input/input.y4m
 
-- # Variable Available Capacity with a Single Flow
+c-1: # Variable Available Capacity with a Single Flow
   emulation:
     name: VariableAvailableCapacity
     module: variable_available_capacity
     config:
-      loss: [0]
+      loss: [0.1, 0.5, 1, 2, 5]
       delay: [100]
       latency: [150]
   flows:
     - name: PionABR
       module: bwe_test_pion_abr
-      server_node: l0
-      receiver_node: r0
+      server_side: l
+      receiver_side: r
       delay: 0
       config: {}
 
-- # Variable Available Capacity with Multiple Flows
+c-2: # Variable Available Capacity with Multiple Flows
   emulation:
     name: VariableAvailableCapacity
     module: variable_available_capacity
     config:
-      loss: [0]
+      loss: [0.1, 0.5, 1, 2, 5]
       delay: [100]
       latency: [150]
   flows:
     - name: RTPoverQUIC
       module: rtp_over_quic_go
-      server_node: l0
-      receiver_node: r0
+      count: 2
+      server_side: l
+      receiver_side: r
       delay: 0
       config:
         codec: ['h264']
         stream: [True, False]
         transport: 
-          - protocol: 'quic'
+          - protocol: 'quic-dgram'
             cc: 'reno'
-          - protocol: 'quic'
+          - protocol: 'quic-dgram'
+            cc: 'none'
+          - protocol: 'quic-stream'
+            cc: 'reno'
+          - protocol: 'quic-stream'
+            cc: 'none'
+          - protocol: 'quic-prio'
+            cc: 'reno'
+          - protocol: 'quic-prio'
+            cc: 'none'
+          - protocol: 'udp'
+            cc: 'none'
+        rtp_cc:
+          - rtp_cc: 'scream'
+            rtcp_feedback: 'rfc8888'
+            local_rfc8888: False
+          - rtp_cc: 'scream'
+            rtcp_feedback: 'none'
+            local_rfc8888: True
+        sender_config:
+          input: input/input.y4m
+
+c-3: # Variable Available Capacity with Multiple Flows
+  emulation:
+    name: VariableAvailableCapacity
+    module: variable_available_capacity
+    config:
+      loss: [0.1, 0.5, 1, 2, 5]
+      delay: [100]
+      latency: [150]
+  flows:
+    - name: PionABR
+      module: bwe_test_pion_abr
+      count: 2
+      server_side: l
+      receiver_side: r
+      delay: 0
+      config: {}
+
+c-4: # Congested Feedback Link with Bi-directional Media Flows
+  emulation:
+    name: VariableAvailableCapacity
+    module: variable_available_capacity
+    config:
+      loss: [0.1, 0.5, 1, 2, 5]
+      delay: [100]
+      latency: [150]
+  flows:
+    - name: RTPoverQUIC
+      module: rtp_over_quic_go
+      server_side: l
+      receiver_side: r
+      delay: 0
+      config:
+        codec: ['h264']
+        stream: [True, False]
+        transport: 
+          - protocol: 'quic-dgram'
+            cc: 'reno'
+          - protocol: 'quic-dgram'
+            cc: 'none'
+          - protocol: 'quic-stream'
+            cc: 'reno'
+          - protocol: 'quic-stream'
+            cc: 'none'
+          - protocol: 'quic-prio'
+            cc: 'reno'
+          - protocol: 'quic-prio'
             cc: 'none'
           - protocol: 'udp'
             cc: 'none'
@@ -83,16 +159,24 @@
           input: input/input.y4m
     - name: RTPoverQUIC
       module: rtp_over_quic_go
-      server_node: l1
-      receiver_node: r1
+      server_side: r
+      receiver_side: l
       delay: 0
       config:
         codec: ['h264']
         stream: [True, False]
         transport: 
-          - protocol: 'quic'
+          - protocol: 'quic-dgram'
             cc: 'reno'
-          - protocol: 'quic'
+          - protocol: 'quic-dgram'
+            cc: 'none'
+          - protocol: 'quic-stream'
+            cc: 'reno'
+          - protocol: 'quic-stream'
+            cc: 'none'
+          - protocol: 'quic-prio'
+            cc: 'reno'
+          - protocol: 'quic-prio'
             cc: 'none'
           - protocol: 'udp'
             cc: 'none'
@@ -106,129 +190,57 @@
         sender_config:
           input: input/input.y4m
 
-- # Variable Available Capacity with Multiple Flows
+c-5: # Congested Feedback Link with Bi-directional Media Flows
   emulation:
     name: VariableAvailableCapacity
     module: variable_available_capacity
     config:
-      loss: [0]
+      loss: [0.1, 0.5, 1, 2, 5]
       delay: [100]
       latency: [150]
   flows:
     - name: PionABR
       module: bwe_test_pion_abr
-      server_node: l0
-      receiver_node: r0
+      server_side: l
+      receiver_side: r
       delay: 0
       config: {}
     - name: PionABR
       module: bwe_test_pion_abr
-      server_node: l1
-      receiver_node: r1
+      server_side: r
+      receiver_side: l
       delay: 0
       config: {}
 
-- # Congested Feedback Link with Bi-directional Media Flows
+c-6: # Media Flow Competing with a Long TCP Flow
   emulation:
     name: VariableAvailableCapacity
     module: variable_available_capacity
     config:
-      loss: [0]
+      loss: [0.1, 0.5, 1, 2, 5]
       delay: [100]
       latency: [150]
   flows:
     - name: RTPoverQUIC
       module: rtp_over_quic_go
-      server_node: l0
-      receiver_node: r0
+      server_side: l
+      receiver_side: r
       delay: 0
       config:
         codec: ['h264']
         stream: [True, False]
         transport: 
-          - protocol: 'quic'
+          - protocol: 'quic-dgram'
             cc: 'reno'
-          - protocol: 'quic'
+          - protocol: 'quic-dgram'
             cc: 'none'
-          - protocol: 'udp'
-            cc: 'none'
-        rtp_cc:
-          - rtp_cc: 'scream'
-            rtcp_feedback: 'rfc8888'
-            local_rfc8888: False
-          - rtp_cc: 'scream'
-            rtcp_feedback: 'none'
-            local_rfc8888: True
-        sender_config:
-          input: input/input.y4m
-    - name: RTPoverQUIC
-      module: rtp_over_quic_go
-      server_node: r1
-      receiver_node: l1
-      delay: 0
-      config:
-        codec: ['h264']
-        stream: [True, False]
-        transport: 
-          - protocol: 'quic'
+          - protocol: 'quic-stream'
             cc: 'reno'
-          - protocol: 'quic'
+          - protocol: 'quic-stream'
             cc: 'none'
-          - protocol: 'udp'
-            cc: 'none'
-        rtp_cc:
-          - rtp_cc: 'scream'
-            rtcp_feedback: 'rfc8888'
-            local_rfc8888: False
-          - rtp_cc: 'scream'
-            rtcp_feedback: 'none'
-            local_rfc8888: True
-        sender_config:
-          input: input/input.y4m
-
-- # Congested Feedback Link with Bi-directional Media Flows
-  emulation:
-    name: VariableAvailableCapacity
-    module: variable_available_capacity
-    config:
-      loss: [0]
-      delay: [100]
-      latency: [150]
-  flows:
-    - name: PionABR
-      module: bwe_test_pion_abr
-      server_node: l0
-      receiver_node: r0
-      delay: 0
-      config: {}
-    - name: PionABR
-      module: bwe_test_pion_abr
-      server_node: r1
-      receiver_node: l1
-      delay: 0
-      config: {}
-
-- # Media Flow Competing with a Long TCP Flow
-  emulation:
-    name: VariableAvailableCapacity
-    module: variable_available_capacity
-    config:
-      loss: [0]
-      delay: [100]
-      latency: [150]
-  flows:
-    - name: RTPoverQUIC
-      module: rtp_over_quic_go
-      server_node: l0
-      receiver_node: r0
-      delay: 0
-      config:
-        codec: ['h264']
-        stream: [True, False]
-        transport: 
-          - protocol: 'quic'
+          - protocol: 'quic-prio'
             cc: 'reno'
-          - protocol: 'quic'
+          - protocol: 'quic-prio'
             cc: 'none'
           - protocol: 'udp'
             cc: 'none'
@@ -243,32 +255,32 @@
           input: input/input.y4m
     - name: Iperf3
       module: iperf3
-      server_node: l1
-      receiver_node: r1
+      server_side: l
+      receiver_side: r
       delay: 0
       config:
         congestion_control_algorithm: [reno, cubic, bbr]
         duration: 100
 
-- # Media Flow Competing with a Long TCP Flow
+c-7: # Media Flow Competing with a Long TCP Flow
   emulation:
     name: VariableAvailableCapacity
     module: variable_available_capacity
     config:
-      loss: [0]
+      loss: [0.1, 0.5, 1, 2, 5]
       delay: [100]
       latency: [150]
   flows:
     - name: PionABR
       module: bwe_test_pion_abr
-      server_node: l0
-      receiver_node: r0
+      server_side: l
+      receiver_side: r
       delay: 0
       config: {}
     - name: Iperf3
       module: iperf3
-      server_node: l1
-      receiver_node: r1
+      server_side: l
+      receiver_side: r
       delay: 0
       config:
         congestion_control_algorithm: [reno, cubic, bbr]

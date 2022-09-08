@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-
 import argparse
 import itertools
 import json
 import os
+import shutil
 import time
 import yaml
 
@@ -162,17 +162,31 @@ class Test:
             self.teardown_network()
 
 
+def get_flow_builders(flow, host):
+    mod = __import__(flow['module'])
+    flow_class = getattr(mod, flow['name'])
+    return flow_class.builders(
+        f'{flow["server_side"]}{host}',
+        f'{flow["receiver_side"]}{host}',
+        flow['delay'],
+        flow['config'],
+    )
+
+
 def parse_flow_builders(flows):
     flow_sets: [[flow.FlowBuilder]] = [[]] * len(flows)
     for i, f in enumerate(flows):
         mod = __import__(f['module'])
         flow_class = getattr(mod, f['name'])
-        flow_builders = flow_class.builders(
-                f['server_node'],
-                f['receiver_node'],
+        flow_builders = [{
+            'fb': fb,
+            'count': f.get('count', 1),
+            'server_side': f['server_side'],
+            'receiver_side': f['receiver_side'],
+            } for fb in flow_class.builders(
                 f['delay'],
                 f['config'],
-            )
+            )]
         flow_sets[i] = flow_builders
 
     product = itertools.product(*flow_sets)
@@ -185,28 +199,41 @@ def parse_emulation_builders(emulation):
     return emulation_class.builders(emulation['config'])
 
 
-def parse_test_config(file_name, data_dir, date):
+def parse_configs(file_name):
     file = Path(file_name)
     if file.is_file():
         with open(file) as f:
             configs = yaml.safe_load(f)
+    return configs
 
+
+def build_test_config(file_name, data_dir, date):
+    configs = parse_configs(file_name)
+    Path(data_dir).mkdir(parents=True, exist_ok=True)
+    shutil.copy(file_name, data_dir)
     tests = []
-    for config_id, config in enumerate(configs):
-        config_name = 'c-{}'.format(config_id)
+    for config_id, config in configs.items():
+        config_name = f'{config_id}'
         config_dir = os.path.join(data_dir, config_name)
         emu_builders = parse_emulation_builders(config['emulation'])
         flow_builders = parse_flow_builders(config['flows'])
         emu_x_flows = itertools.product(emu_builders, flow_builders)
 
         for id, x in enumerate(emu_x_flows):
-            emu_name = 'e-{}'.format(id)
+            emu_name = f'e-{id}'
             emu_dir = os.path.join(config_dir, emu_name, date)
-            emulation = x[0].build(emu_dir)
-            flows = [f.build(
-                i,
-                os.path.join(emu_dir, 'f-{}'.format(i)),
-                ) for i, f in enumerate(x[1])]
+            emulation = x[0].build(emu_dir, config_id)
+            flows = []
+            i = 0
+            for f in x[1]:
+                for _ in range(f['count']):
+                    flows.append(f['fb'].build(
+                        i,
+                        f'{f["server_side"]}{i}',
+                        f'{f["receiver_side"]}{i}',
+                        os.path.join(emu_dir, 'f-{}'.format(i)),
+                    ))
+                    i += 1
 
             tc = TestConfig(flows, emulation)
             tests.append(tc)
@@ -240,7 +267,7 @@ def main():
     args = parse_test_args()
     setLogLevel(args.log_level)
     date = str(int(time.time() * 1000))
-    test_configs = parse_test_config(args.config_file, args.data_dir, date)
+    test_configs = build_test_config(args.config_file, args.data_dir, date)
     print('running {} test configs'.format(len(test_configs)))
     for i, test_config in enumerate(test_configs):
         print('running test config {}/{}'.format(i+1, len(test_configs)))

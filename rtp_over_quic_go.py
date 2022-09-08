@@ -54,20 +54,16 @@ class RTPoverQUICCommonConfig(NamedTuple):
 class RTPoverQUICBuilder(FlowBuilder):
     def __init__(
             self,
-            server_node,
-            receiver_node,
             delay,
             config):
-        self._server_node = server_node
-        self._receiver_node = receiver_node
         self._delay = delay
         self._config = config
 
-    def build(self, id, log_dir):
+    def build(self, id, server_node, receiver_node, log_dir):
         return RTPoverQUIC(
             id,
-            self._server_node,
-            self._receiver_node,
+            server_node,
+            receiver_node,
             self._delay,
             log_dir,
             self._config,
@@ -90,8 +86,6 @@ class RTPoverQUIC(Flow):
 
     @staticmethod
     def builders(
-            server_node,
-            receiver_node,
             delay,
             config,
             ) -> [FlowBuilder]:
@@ -115,8 +109,6 @@ class RTPoverQUIC(Flow):
             cleaned_configs.append(c)
 
         builders = [RTPoverQUICBuilder(
-            server_node,
-            receiver_node,
             delay,
             RTPoverQUICCommonConfig(
                 sender_config=RTPoverQUICSenderConfig(
@@ -133,13 +125,20 @@ class RTPoverQUIC(Flow):
 
     def config_json(self):
         return {
+            'name': 'rtp-over-quic-go',
             'sender_config': self._config.sender_config._asdict(),
             'receiver_config': self._config.receiver_config._asdict(),
-            'rtp_cc': self._config.rtp_cc._asdict(),
-            'transport': self._config.transport._asdict(),
-            'codec': self._config.codec,
-            'stream': self._config.stream,
             'log_dir': self._log_dir,
+            'parameters': {
+                'transport': self._config.transport.protocol,
+                'transport-cc': self._config.transport.cc,
+                'rtp-cc': self._config.rtp_cc.rtp_cc,
+                'rtcp-feedback': self._config.rtp_cc.rtcp_feedback,
+                'local-rfc8888': self._config.rtp_cc.local_rfc8888,
+                'codec': self._config.codec,
+                'stream': self._config.stream,
+                'id': self._id,
+            },
             'id': self._id,
         }
 

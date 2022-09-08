@@ -30,8 +30,6 @@ class Flow(ABC):
     @staticmethod
     @abstractmethod
     def builders(
-            server_node,
-            receiver_node,
             delay,
             config,
             ):
@@ -79,6 +77,7 @@ class Flow(ABC):
             t.join()
 
     def start_client(self, q, end_event, host, addr, port):
+        Path(self._log_dir).mkdir(parents=True, exist_ok=True)
         cmd = self.client_cmd(addr, port)
         q.put('client_{}_cmd: {}'.format(self._id, cmd))
         proc = host.popen(cmd, stderr=PIPE, stdout=PIPE)
@@ -119,5 +118,5 @@ def communicate(q, id, endpoint, stream, log_dir, out):
 
 class FlowBuilder():
     @abstractmethod
-    def build(id, log_dir) -> Flow:
+    def build(id, server_node, receiver_node, log_dir) -> Flow:
         pass

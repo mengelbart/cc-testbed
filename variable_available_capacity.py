@@ -13,9 +13,10 @@ class VariableAvailableCapacityBuilder(EmulationBuilder):
         self._delay = delay
         self._latency = latency
 
-    def build(self, log_dir):
+    def build(self, log_dir, config_id):
         return VariableAvailableCapacity(
                 log_dir,
+                config_id,
                 self._loss,
                 self._delay,
                 self._latency,
@@ -23,11 +24,14 @@ class VariableAvailableCapacityBuilder(EmulationBuilder):
 
 
 class VariableAvailableCapacity(Emulation):
-    def __init__(self, log_dir, loss=0, delay=0, latency=300):
-        Emulation.__init__(self, log_dir)
+    def __init__(self, log_dir, config_id, loss=0, delay=0, latency=300):
+        Emulation.__init__(self, log_dir, config_id)
         self._tc_cmd = 'add'
         self._reference_bandwidth = 1.0
         self._runtime = 100
+        self._loss = loss
+        self._delay = delay
+        self._latency = latency
         self._link_configs = [
                     LinkConfig(0, 1000000, loss, delay, latency),
                     LinkConfig(40, 2500000, loss, delay, latency),
@@ -56,9 +60,19 @@ class VariableAvailableCapacity(Emulation):
 
     def config_json(self):
         return {
-                'runtime': self._runtime,
-                'link_configs': [x._asdict() for x in self._link_configs],
-                }
+            'config_id': self._config_id,
+            'name': 'VariableAvailableCapacity',
+            'runtime': self._runtime,
+            'bandwidths': [{
+                'time': x.start_time,
+                'capacity': x.bandwidth,
+            } for x in self._link_configs],
+            'parameters': {
+                'loss': self._loss,
+                'delay': self._delay,
+                'latency': self._latency,
+            },
+        }
 
     def init_link_emulation(self, net):
         s1, s2 = net.getNodeByName('ls1', 'rs1')

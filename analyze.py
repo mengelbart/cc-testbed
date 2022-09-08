@@ -4,7 +4,9 @@ import argparse
 import glob
 import json
 import multiprocessing
+import shutil
 import os
+import yaml
 
 import pandas as pd
 
@@ -39,7 +41,7 @@ class SingleExperimentAnalyzer():
             print('config file not found, aborting analyses')
             return
 
-        c = read_config(config)
+        c = read_config_json(config)
 
         config_filename = os.path.join(self._output, 'config.json')
         with open(config_filename, 'w') as file:
@@ -116,31 +118,80 @@ class AggregateAnalyzer():
         pass
 
 
-def read_config(path):
+def read_config_yaml(path):
+    file = Path(path)
+    if file.is_file():
+        with open(file) as f:
+            c = yaml.safe_load(f)
+    return c
+
+
+def read_config_json(path):
     with open(path) as r:
         c = json.load(r)
     return c
 
 
 def create_index(args):
-    dirs = [d for d in glob.glob(args.input_dir + '**', recursive=True)
-            if os.path.isdir(d) and
-            any(fname.endswith('config.json') for fname in os.listdir(d))]
+    config_file = os.path.join(args.input_dir, 'config.yaml')
+    if not os.path.isfile(config_file):
+        print('config.yaml not found, aborting')
+
+    main_configs = read_config_yaml(config_file)
+
+    configs = []
+    for name, config in main_configs.items():
+        root_dir = os.path.join(args.input_dir, name)
+        dirs = [d for d in glob.glob(root_dir + '/**', recursive=True)
+                if os.path.isdir(d) and
+                any(fname.endswith('config.json')
+                    for fname in os.listdir(d))]
+        paths = [{
+            'path': Path(d).relative_to(args.output_dir),
+            'config': read_config_json(os.path.join(d, 'config.json')),
+        } for d in sorted(dirs)]
+        if len(paths) == 0:
+            continue
+
+        e_headers = list(paths[0]['config']['emulation']['parameters'].keys())
+        f_headers = []
+        for i, f in enumerate(paths[0]['config']['flows']):
+            f_headers.extend([f'f{i}-{f}' for f in f.get('parameters', [])])
+
+        experiments = []
+        for p in paths:
+            emu_parameters = [
+                p['config']['emulation']['parameters'][header]
+                for header in e_headers
+            ]
+            flow_parameters = []
+            for i, f in enumerate(p['config']['flows']):
+                if 'parameters' not in f:
+                    continue
+                keys = [header.split(f'f{i}-') for header in f_headers]
+                flow_parameters.extend([
+                    f['parameters'].get(key[1], '')
+                    for key in keys if len(key) > 1
+                ])
+
+            experiments.append({
+                'link': os.path.join(p['path'], 'index.html'),
+                'name': str(p['path']),
+                'parameters': emu_parameters + flow_parameters,
+            })
+
+        configs.append({
+            'root_config_name': name,
+            'root_config': config,
+            'headers': ['Link'] + e_headers + f_headers,
+            'experiments': experiments,
+        })
 
     environment = Environment(loader=FileSystemLoader('templates/'))
     template = environment.get_template('index.html')
-    root = Path(args.output_dir)
-    paths = [{
-        'path': Path(d).relative_to(root),
-        'config': read_config(os.path.join(d, 'config.json')),
-    } for d in sorted(dirs)]
-    experiments = [{
-        'link': os.path.join(p['path'], 'index.html'),
-        'name': str(p['path']),
-        'config': p['config'],
-    } for p in paths]
+
     context = {
-        'experiments': experiments,
+        'evaluated_configs': configs,
     }
     content = template.render(context)
     filename = os.path.join(args.output_dir, 'index.html')
@@ -154,6 +205,14 @@ def run_single(args):
 
 
 def analyze_single(args):
+
+    files = [f for f in glob.glob(args.input_dir + '**', recursive=True)
+             if os.path.isfile(f)]
+    main_config = next((f for f in files if f.endswith('config.yaml')), None)
+    if main_config:
+        Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+        shutil.copy(main_config, os.path.join(args.output_dir, 'config.yaml'))
+
     dirs = [d for d in glob.glob(args.input_dir + '**', recursive=True)
             if os.path.isdir(d) and
             any(fname.endswith('config.json') for fname in os.listdir(d))]
@@ -161,7 +220,8 @@ def analyze_single(args):
     pool = multiprocessing.Pool(16)
     args = [{
             'input_dir': dir,
-            'output_dir': os.path.join(args.output_dir, dir)
+            'output_dir': os.path.join(
+                args.output_dir, str(Path(dir).relative_to(args.input_dir))),
             } for dir in dirs]
     pool.map(
         run_single,

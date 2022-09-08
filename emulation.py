@@ -48,8 +48,9 @@ class Emulation(ABC):
     def topology(self):
         pass
 
-    def __init__(self, log_dir):
+    def __init__(self, log_dir, config_id):
         self._log_dir = log_dir
+        self._config_id = config_id
         self._log_file = os.path.join(self._log_dir, 'link.log')
         self._queue = None
 
@@ -101,5 +102,5 @@ class Emulation(ABC):
 
 class EmulationBuilder():
     @abstractmethod
-    def build(self, log_dir):
+    def build(self, log_dir, config_id):
         pass

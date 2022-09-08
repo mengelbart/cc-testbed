@@ -10,20 +10,16 @@ class PionABRConfig(NamedTuple):
 class PionABRBuilder(FlowBuilder):
     def __init__(
             self,
-            server_node,
-            receiver_node,
             delay,
             config):
-        self._server_node = server_node
-        self._receiver_node = receiver_node
         self._delay = delay
         self._config = config
 
-    def build(self, id, log_dir):
+    def build(self, id, server_node, receiver_node, log_dir):
         return PionABR(
             id,
-            self._server_node,
-            self._receiver_node,
+            server_node,
+            receiver_node,
             self._delay,
             log_dir,
             self._config,
@@ -37,23 +33,23 @@ class PionABR(Flow):
 
     @staticmethod
     def builders(
-            server_node,
-            receiver_node,
             delay,
             config,
             ):
         return [PionABRBuilder(
-            server_node,
-            receiver_node,
             delay,
             PionABRConfig(**config),
         )]
 
     def config_json(self):
         return {
+            'name': 'bwe-test-pion-abr',
             'config': self._config._asdict(),
             'log_dir': self._log_dir,
             'id': self._id,
+            'parameters': {
+                'id': self._id,
+            },
         }
 
     def server_cmd(self, addr, port):
