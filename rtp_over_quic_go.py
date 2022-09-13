@@ -106,6 +106,9 @@ class RTPoverQUIC(Flow):
             if (c[2]['protocol'] == 'quic' and c[2]['cc'] == 'none' and
                     c[1] is True):
                 continue
+            if (c[2]['protocol'] == 'quic-prio' and c[2]['cc'] == 'none' and
+                    c[1] is True):
+                continue
             cleaned_configs.append(c)
 
         builders = [RTPoverQUICBuilder(
