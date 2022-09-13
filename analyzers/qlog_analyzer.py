@@ -124,7 +124,7 @@ class QLOGAnalyzer():
 
             if len(stream_frames) > 0:
                 s = sum([stream['length'] for stream in stream_frames])
-                self.stream_tx.append({
+                self.stream_rx.append({
                     'time': event['time'],
                     'bytes': s,
                 })
@@ -263,12 +263,14 @@ class QLOGAnalyzer():
 
     def plot_rx_rates(self, ax, params={}):
         labels = []
-        if hasattr(self, '_datagram_rx_df') and self._dgram_rx_df is not None:
+        if hasattr(self, '_dgram_rx_df') and self._dgram_rx_df is not None:
             l, = ax.plot(
                 self._dgram_rx_df.index,
                 self._dgram_rx_df['bytes'],
                 label='Datagram Received',
                 linewidth=0.5,
+                linestyle='--',
+                alpha=0.7,
                 **params,
             )
             labels.append(l)
@@ -279,6 +281,9 @@ class QLOGAnalyzer():
                 self._stream_rx_df['bytes'],
                 label='Stream Received',
                 linewidth=0.5,
+                linestyle='--',
+                alpha=0.7,
+                **params,
             )
             labels.append(l)
 
@@ -288,18 +293,23 @@ class QLOGAnalyzer():
                 self._rate_rx_df['bytes'],
                 label='Total Received',
                 linewidth=0.5,
+                linestyle=':',
+                alpha=0.7,
+                **params,
             )
             labels.append(l)
         return labels
 
     def plot_tx_rates(self, ax, params={}):
         labels = []
-        if hasattr(self, '_datagram_tx_df') and self._dgram_tx_df is not None:
+        if hasattr(self, '_dgram_tx_df') and self._dgram_tx_df is not None:
             l, = ax.plot(
                 self._dgram_tx_df.index,
                 self._dgram_tx_df['bytes'],
                 label='Datagram Sent',
                 linewidth=0.5,
+                linestyle='--',
+                alpha=0.7,
                 **params,
             )
             labels.append(l)
@@ -310,6 +320,9 @@ class QLOGAnalyzer():
                 self._stream_tx_df['bytes'],
                 label='Stream Sent',
                 linewidth=0.5,
+                linestyle='--',
+                alpha=0.7,
+                **params,
             )
             labels.append(l)
 
@@ -319,6 +332,9 @@ class QLOGAnalyzer():
                 self._rate_tx_df['bytes'],
                 label='Total sent',
                 linewidth=0.5,
+                linestyle=':',
+                alpha=0.7,
+                **params,
             )
             labels.append(l)
         return labels
