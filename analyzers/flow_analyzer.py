@@ -5,6 +5,7 @@ from matplotlib.dates import DateFormatter
 from matplotlib.ticker import EngFormatter, PercentFormatter
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 from analyzers.qlog_analyzer import QLOGAnalyzer
@@ -32,6 +33,7 @@ class SingleFlowAnalyzer():
     def analyze(self):
         self.read_rtp_stats()
         self.analyze_qlog()
+        self.analyze_video_quality()
 
     def set_link_capacity(self, link: pd.DataFrame):
         self.link = link
@@ -153,6 +155,11 @@ class SingleFlowAnalyzer():
             self.qlog_client = QLOGAnalyzer()
             self.qlog_client.read(cf)
 
+    def analyze_video_quality(self):
+        p = os.path.join(self.input_dir, 'video_quality.csv')
+        if os.path.isfile(p):
+            self.video_quality_df = read_video_quality(p)
+
     def plot(self):
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
         self.plot_rtp_throughput()
@@ -161,6 +168,7 @@ class SingleFlowAnalyzer():
         self.plot_rtp_latency()
         self.plot_rtp_latency_hist()
         self.plot_qlog()
+        self.plot_video_quality()
 
     def plot_rtp_throughput(self):
         fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
@@ -359,6 +367,52 @@ class SingleFlowAnalyzer():
                 fig.savefig(name, bbox_inches='tight')
                 plt.close(fig)
 
+    def plot_video_quality(self):
+        fig, (
+                (psnr, ssim, vmaf),
+                (psnr_h, ssim_h, vmaf_h),
+            ) = plt.subplots(nrows=2, ncols=3, figsize=(20, 10), dpi=400)
+
+        self.plot_video_metric('ssim', ssim, ssim_h)
+        self.plot_video_metric('psnr', psnr, psnr_h)
+        self.plot_video_metric('vmaf', vmaf, vmaf_h)
+
+        psnr.set_title('PSNR')
+        psnr_h.set_title('PSNR Histogram')
+        ssim.set_title('SSIM')
+        ssim_h.set_title('SSIM Histogram')
+        vmaf.set_title('VMAF')
+        vmaf_h.set_title('VMAF Histogram')
+
+        name = os.path.join(self.output_dir, 'video_quality.png')
+        fig.savefig(name, bbox_inches="tight")
+        plt.close(fig)
+
+    def plot_video_metric(self, metric, ax, ax_h):
+        self.video_quality_df[
+                np.isfinite(self.video_quality_df)][metric].plot(ax=ax)
+        self.video_quality_df[np.isfinite(self.video_quality_df)][metric].hist(
+                cumulative=True,
+                bins=len(self.video_quality_df[metric]),
+                density=True, ax=ax_h)
+
+        mu = self.video_quality_df[
+                np.isfinite(self.video_quality_df)][metric].mean()
+        median = np.median(self.video_quality_df[metric])
+        sigma = self.video_quality_df[
+                np.isfinite(self.video_quality_df)][metric].std()
+        textstr = '\n'.join((
+            r'$\mu=%.2f$' % (mu, ),
+            r'$\mathrm{median}=%.2f$' % (median, ),
+            r'$\sigma=%.2f$' % (sigma, )))
+
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+
+        # place a text box in upper right in axes coords
+        ax_h.text(0.05, 0.95, textstr,
+                  transform=ax_h.transAxes, fontsize=14,
+                  verticalalignment='top', bbox=props)
+
 
 def read_rtp(file):
     return pd.read_csv(
@@ -387,4 +441,12 @@ def read_gcc_target_rate(file):
         names=['time', 'target'],
         header=None,
         usecols=[0, 1]
+    )
+
+
+def read_video_quality(file):
+    return pd.read_csv(
+        file,
+        index_col=0,
+        usecols=[0, 12, 13, 14],
     )
