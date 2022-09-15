@@ -149,7 +149,7 @@ def create_index(args):
         paths = [{
             'path': Path(d).relative_to(args.output_dir),
             'config': read_config_json(os.path.join(d, 'config.json')),
-        } for d in sorted(dirs)]
+        } for d in dirs]
         if len(paths) == 0:
             continue
 

@@ -29,7 +29,7 @@
         <tbody id="variable-available-capacity-single-flow">
           {% for experiment in config.experiments %}
           <tr>
-            <td>{{ loop.index }}</td>
+            <td>{{ loop.index - 1 }}</td>
             <td><a href={{ experiment.link }}>{{ experiment.name }}</a></td>
             {% for value in experiment.parameters %}
             <td>{{ value }}</td>
