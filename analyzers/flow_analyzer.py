@@ -29,6 +29,7 @@ class SingleFlowAnalyzer():
         self.rtp_utilization: pd.DataFrame = None
         self.qlog_server: QLOGAnalyzer = None
         self.qlog_client: QLOGAnalyzer = None
+        self.video_quality_df: pd.DataFrame = None
 
     def analyze(self):
         self.read_rtp_stats()
@@ -368,25 +369,27 @@ class SingleFlowAnalyzer():
                 plt.close(fig)
 
     def plot_video_quality(self):
-        fig, (
-                (psnr, ssim, vmaf),
-                (psnr_h, ssim_h, vmaf_h),
-            ) = plt.subplots(nrows=2, ncols=3, figsize=(20, 10), dpi=400)
+        if self.video_quality_df is not None:
+            fig, (
+                    (psnr, ssim, vmaf),
+                    (psnr_h, ssim_h, vmaf_h),
+                ) = plt.subplots(nrows=2, ncols=3, figsize=(20, 10), dpi=400)
 
-        self.plot_video_metric('ssim', ssim, ssim_h)
-        self.plot_video_metric('psnr', psnr, psnr_h)
-        self.plot_video_metric('vmaf', vmaf, vmaf_h)
+            self.plot_video_metric('ssim', ssim, ssim_h)
+            self.plot_video_metric('psnr', psnr, psnr_h)
+            self.plot_video_metric('vmaf', vmaf, vmaf_h)
 
-        psnr.set_title('PSNR')
-        psnr_h.set_title('PSNR Histogram')
-        ssim.set_title('SSIM')
-        ssim_h.set_title('SSIM Histogram')
-        vmaf.set_title('VMAF')
-        vmaf_h.set_title('VMAF Histogram')
+            psnr.set_title('PSNR')
+            psnr_h.set_title('PSNR Histogram')
+            ssim.set_title('SSIM')
+            ssim_h.set_title('SSIM Histogram')
+            vmaf.set_title('VMAF')
+            vmaf_h.set_title('VMAF Histogram')
 
-        name = os.path.join(self.output_dir, 'video_quality.png')
-        fig.savefig(name, bbox_inches="tight")
-        plt.close(fig)
+            name = os.path.join(self.output_dir, 'video_quality.png')
+            fig.savefig(name, bbox_inches="tight")
+            self.plot_files.append(name)
+            plt.close(fig)
 
     def plot_video_metric(self, metric, ax, ax_h):
         self.video_quality_df[
