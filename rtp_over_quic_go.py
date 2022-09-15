@@ -97,16 +97,14 @@ class RTPoverQUIC(Flow):
 
         cleaned_configs = []
         for c in configs:
-            if (c[2]['protocol'] == 'udp' and
+            if (c[2]['protocol'] in ['udp', 'quic-prio', 'quic-stream'] and
                     c[3].get('local_rfc8888', False) is True):
                 continue
             if (c[2]['protocol'] == 'udp' and
                     c[1] is True):
                 continue
-            if (c[2]['protocol'] == 'quic' and c[2]['cc'] == 'none' and
-                    c[1] is True):
-                continue
-            if (c[2]['protocol'] == 'quic-prio' and c[2]['cc'] == 'none' and
+            if (c[2]['protocol'] in ['quic', 'quic-prio', 'quic-dgram',
+                'quic-stream'] and c[2]['cc'] == 'none' and
                     c[1] is True):
                 continue
             cleaned_configs.append(c)
@@ -192,7 +190,10 @@ class RTPoverQUIC(Flow):
             cmd.append('--stream')
         if self._config.rtp_cc.local_rfc8888:
             cmd.append('--local-rfc8888')
-        if self._config.transport.protocol == 'quic':
+        if (self._config.transport.protocol == 'quic' or
+                self._config.transport.protocol == 'quic-prio' or
+                self._config.transport.protocol == 'quic-dgram' or
+                self._config.transport.protocol == 'quic-stream'):
             cmd.append('--quic-cc')
             cmd.append(self._config.transport.cc)
         if self._config.transport.protocol == 'tcp':
