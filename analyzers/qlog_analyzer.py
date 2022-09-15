@@ -243,7 +243,7 @@ class QLOGAnalyzer():
             self._packet_loss_df['time'] = pd.to_datetime(
                     self._packet_loss_df['time'], unit='ms')
 
-    def plot_rtt(self, ax, params={}):
+    def plot_rtt(self, ax, title, params={}):
         if hasattr(self, '_rtt_df') and self._rtt_df is None:
             return
 
@@ -257,7 +257,7 @@ class QLOGAnalyzer():
 
         ax.set_xlabel('Time')
         ax.set_ylabel('RTT')
-        ax.set_title('QLOG RTT')
+        ax.set_title(title + ' RTT')
         ax.xaxis.set_major_formatter(DateFormatter("%M:%S"))
         ax.yaxis.set_major_formatter(EngFormatter(unit='ms'))
 
@@ -339,7 +339,7 @@ class QLOGAnalyzer():
             labels.append(l)
         return labels
 
-    def plot_cwnd(self, ax, params={}):
+    def plot_cwnd(self, ax, title, params={}):
         labels = []
         if hasattr(self, '_df_congestion') and self._df_congestion is not None:
             l, = ax.plot(
@@ -376,7 +376,7 @@ class QLOGAnalyzer():
         if len(labels) > 0:
             ax.set_xlabel('Time')
             ax.set_ylabel('CWND')
-            ax.set_title('QLOG CWND/Inflight')
+            ax.set_title(title + ' CWND/Inflight')
             ax.yaxis.set_major_formatter(EngFormatter(unit='Bytes'))
             ax.xaxis.set_major_formatter(DateFormatter("%M:%S"))
             ax.legend(handles=labels)

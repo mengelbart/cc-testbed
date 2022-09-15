@@ -340,7 +340,7 @@ class SingleFlowAnalyzer():
                     'server_qlog_cwnd.png': self.qlog_server.plot_cwnd,
                     }.items():
                 fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
-                f(ax)
+                f(ax, 'QLOG Server')
                 fig.tight_layout()
                 name = os.path.join(self.output_dir, name)
                 self.plot_files.append(name)
@@ -360,7 +360,7 @@ class SingleFlowAnalyzer():
                     'client_qlog_cwnd.png': self.qlog_client.plot_cwnd,
                     }.items():
                 fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
-                f(ax)
+                f(ax, 'QLOG Client')
                 fig.tight_layout()
                 name = os.path.join(self.output_dir, name)
                 self.plot_files.append(name)
