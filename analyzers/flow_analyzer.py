@@ -140,6 +140,7 @@ class SingleFlowAnalyzer():
             axis=1,
             keys=['rate', 'bandwidth'],
         )
+        df['utilization'] = df['rate'] / df['bandwidth']
         self.rtp_utilization = df
 
     def analyze_qlog(self):
@@ -164,6 +165,7 @@ class SingleFlowAnalyzer():
     def plot(self):
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
         self.plot_rtp_throughput()
+        self.plot_rtp_utilization()
         self.plot_rtp_departure_arrival()
         self.plot_rtp_loss()
         self.plot_rtp_latency()
@@ -211,6 +213,20 @@ class SingleFlowAnalyzer():
         ax.yaxis.set_major_formatter(EngFormatter(unit='bit/s'))
         ax.legend(handles=labels)
         name = os.path.join(self.output_dir, 'rtp_throughput.png')
+        self.plot_files.append(name)
+        fig.savefig(name, bbox_inches='tight')
+        plt.close(fig)
+
+    def plot_rtp_utilization(self):
+        fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
+        defaults = {
+            'linewidth': 0.5,
+            'label': 'Test',
+        }
+        label, = ax.plot(self.rtp_utilization['utilization'], **defaults)
+        ax.legend(handles=[label])
+        ax.set_title('RTP utilization')
+        name = os.path.join(self.output_dir, 'rtp_utilization.png')
         self.plot_files.append(name)
         fig.savefig(name, bbox_inches='tight')
         plt.close(fig)
