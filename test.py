@@ -143,6 +143,8 @@ class Test:
             self.emulation.close_link_emulation()
             self.end_time = time.time()
             self.write_meta_info()
+            for f in self.flows:
+                f.cleanup()
         except Exception as e:
             print(e)
         finally:
@@ -154,8 +156,6 @@ class Test:
             for thread in self.client_threads:
                 thread.join()
                 print('joined client')
-            for f in self.flows:
-                f.cleanup()
             io_queue.put(None)
             iot.join()
             print('joined iot')
