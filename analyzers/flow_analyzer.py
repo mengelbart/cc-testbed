@@ -48,7 +48,8 @@ class SingleFlowAnalyzer():
         if scream_log_file:
             df = read_scream_target_rate(scream_log_file)
             df.index = pd.to_datetime(df.index - self.basetime, unit='ms')
-            self.scream_target_rate = df
+            self.scream_target_rate = df[['target']].copy()
+            self.scream_cwnd = df[['cwnd', 'bytesInFlight']].copy()
 
         gcc_log_file = next(
                 (f for f in files if f.name.endswith('cc.gcc')), None)
@@ -165,6 +166,7 @@ class SingleFlowAnalyzer():
     def plot(self):
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
         self.plot_rtp_throughput()
+        self.plot_scream_cwnd()
         self.plot_rtp_utilization()
         self.plot_rtp_departure_arrival()
         self.plot_rtp_loss()
@@ -172,6 +174,26 @@ class SingleFlowAnalyzer():
         self.plot_rtp_latency_hist()
         self.plot_qlog()
         self.plot_video_quality()
+
+    def plot_scream_cwnd(self):
+        if self.scream_cwnd is not None:
+            fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
+
+            defaults = {
+                'linewidth': 0.5,
+            }
+            cwnd, = ax.plot(self.scream_cwnd['cwnd'], label='CWND', **defaults)
+            inflight, = ax.plot(
+                self.scream_cwnd['bytesInFlight'],
+                label='Bytes in Flight',
+                **defaults,
+            )
+            ax.legend(handles=[cwnd, inflight])
+            ax.set_title('SCReAM CWND/InFlight')
+            name = os.path.join(self.output_dir, 'scream_cwnd.png')
+            self.plot_files.append(name)
+            fig.savefig(name, bbox_inches='tight')
+            plt.close(fig)
 
     def plot_rtp_throughput(self):
         fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
@@ -221,7 +243,7 @@ class SingleFlowAnalyzer():
         fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
         defaults = {
             'linewidth': 0.5,
-            'label': 'Test',
+            'label': 'Utilization',
         }
         label, = ax.plot(self.rtp_utilization['utilization'], **defaults)
         ax.legend(handles=[label])
@@ -447,9 +469,9 @@ def read_scream_target_rate(file):
     return pd.read_csv(
         file,
         index_col=0,
-        names=['time', 'target'],
+        names=['time', 'target', 'cwnd', 'bytesInFlight'],
         header=None,
-        usecols=[0, 1]
+        usecols=[0, 1, 4, 5]
     )
 
 
