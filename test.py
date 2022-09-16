@@ -121,6 +121,7 @@ class Test:
         cleanup()
 
     def run(self):
+        cleanup = True
         io_queue = Queue()
         end_event = Event()
         iot = Thread(target=self.log_output_from_queue, args=(io_queue, ))
@@ -143,10 +144,13 @@ class Test:
             self.emulation.close_link_emulation()
             self.end_time = time.time()
             self.write_meta_info()
-            for f in self.flows:
-                f.cleanup()
         except Exception as e:
             print(e)
+            cleanup = False
+        except KeyboardInterrupt as i:
+            print('got KeyboardInterrupt')
+            cleanup = False
+            raise i
         finally:
             end_event.set()
             print('cleaining up')
@@ -156,6 +160,10 @@ class Test:
             for thread in self.client_threads:
                 thread.join()
                 print('joined client')
+            if cleanup:
+                print('running cleanup')
+                for f in self.flows:
+                    f.cleanup()
             io_queue.put(None)
             iot.join()
             print('joined iot')
