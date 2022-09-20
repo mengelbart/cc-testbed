@@ -20,7 +20,7 @@ class SingleFlowAnalyzer():
         self.plot_files = []
 
         self.link: pd.DataFrame = None
-        self.scream_target_rate: pd.DataFrame = None
+        self.scream: pd.DataFrame = None
         self.gcc_target_rate: pd.DataFrame = None
         self.outgoing_rtp: pd.DataFrame = None
         self.incoming_rtp: pd.DataFrame = None
@@ -48,8 +48,7 @@ class SingleFlowAnalyzer():
         if scream_log_file:
             df = read_scream_target_rate(scream_log_file)
             df.index = pd.to_datetime(df.index - self.basetime, unit='ms')
-            self.scream_target_rate = df[['target']].copy()
-            self.scream_cwnd = df[['cwnd', 'bytesInFlight']].copy()
+            self.scream = df
 
         gcc_log_file = next(
                 (f for f in files if f.name.endswith('cc.gcc')), None)
@@ -98,6 +97,7 @@ class SingleFlowAnalyzer():
         df_all.index = pd.to_datetime(
                 df_all['time_send'] - self.basetime, unit='ms')
         df_all['lost'] = df_all['_merge'] == 'left_only'
+        # print(df_all[df_all['lost'] == True])
         df_all = df_all.resample('1s').agg(
                 {'time_send': 'count', 'lost': 'sum'})
         df_all['loss_rate'] = df_all['lost'] / df_all['time_send']
@@ -167,6 +167,8 @@ class SingleFlowAnalyzer():
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
         self.plot_rtp_throughput()
         self.plot_scream_cwnd()
+        self.plot_scream_delays()
+        self.plot_scream_rates()
         self.plot_rtp_utilization()
         self.plot_rtp_departure_arrival()
         self.plot_rtp_loss()
@@ -175,16 +177,53 @@ class SingleFlowAnalyzer():
         self.plot_qlog()
         self.plot_video_quality()
 
-    def plot_scream_cwnd(self):
-        if self.scream_cwnd is not None:
+    def plot_scream_rates(self):
+        if self.scream is not None:
             fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
 
             defaults = {
                 'linewidth': 0.5,
             }
-            cwnd, = ax.plot(self.scream_cwnd['cwnd'], label='CWND', **defaults)
+            lost, = ax.plot(
+                    self.scream['rateLostStream0'],
+                    label='Rate Lost', **defaults)
+            acked, = ax.plot(
+                    self.scream['rateAckedStream0'],
+                    label='Rate Acked', **defaults)
+            ax.legend(handles=[lost, acked])
+            ax.set_title('SCReAM Rates')
+            name = os.path.join(self.output_dir, 'scream_rates.png')
+            self.plot_files.append(name)
+            fig.savefig(name, bbox_inches='tight')
+            plt.close(fig)
+
+    def plot_scream_delays(self):
+        if self.scream is not None:
+            fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
+
+            defaults = {
+                'linewidth': 0.5,
+            }
+            qd, = ax.plot(
+                    self.scream['queueDelay'], label='Queue Delay', **defaults)
+            srtt, = ax.plot(self.scream['sRTT'], label='sRTT', **defaults)
+            ax.legend(handles=[qd, srtt])
+            ax.set_title('SCReAM Delays')
+            name = os.path.join(self.output_dir, 'scream_delays.png')
+            self.plot_files.append(name)
+            fig.savefig(name, bbox_inches='tight')
+            plt.close(fig)
+
+    def plot_scream_cwnd(self):
+        if self.scream is not None:
+            fig, ax = plt.subplots(figsize=(8, 2), dpi=400)
+
+            defaults = {
+                'linewidth': 0.5,
+            }
+            cwnd, = ax.plot(self.scream['cwnd'], label='CWND', **defaults)
             inflight, = ax.plot(
-                self.scream_cwnd['bytesInFlight'],
+                self.scream['bytesInFlight'],
                 label='Bytes in Flight',
                 **defaults,
             )
@@ -210,8 +249,8 @@ class SingleFlowAnalyzer():
         incoming_rtp = incoming_rtp.resample('1s').sum()
 
         target_rate = None
-        if self.scream_target_rate is not None:
-            target_rate = self.scream_target_rate
+        if self.scream is not None:
+            target_rate = self.scream[['target']]
         if self.gcc_target_rate is not None:
             target_rate = self.gcc_target_rate
 
@@ -469,9 +508,20 @@ def read_scream_target_rate(file):
     return pd.read_csv(
         file,
         index_col=0,
-        names=['time', 'target', 'cwnd', 'bytesInFlight'],
+        names=[
+            'time',
+            'target',
+            'queueDelay',
+            'sRTT',
+            'cwnd',
+            'bytesInFlight',
+            'rateLostStream0',
+            'rateTransmittedStream0',
+            'rateAckedStream0',
+            'hiSeqAckStream0',
+            'isInFastStart',
+        ],
         header=None,
-        usecols=[0, 1, 4, 5]
     )
 
 
