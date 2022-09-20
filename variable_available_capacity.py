@@ -4,14 +4,20 @@ import sched
 import subprocess
 import time
 
+from typing import NamedTuple
 from emulation import DumbbellTopo, Emulation, EmulationBuilder, LinkConfig
 
 
+class LossConfig(NamedTuple):
+    name: str = 'random'
+    parameters: list[int] = [0]
+
+
 class VariableAvailableCapacityBuilder(EmulationBuilder):
-    def __init__(self, loss, delay, latency):
-        self._loss = loss
-        self._delay = delay
-        self._latency = latency
+    def __init__(self, loss: LossConfig, delay: int, latency: int):
+        self._loss: LossConfig = loss
+        self._delay: int = delay
+        self._latency: int = latency
 
     def build(self, log_dir, config_id):
         return VariableAvailableCapacity(
@@ -24,7 +30,14 @@ class VariableAvailableCapacityBuilder(EmulationBuilder):
 
 
 class VariableAvailableCapacity(Emulation):
-    def __init__(self, log_dir, config_id, loss=0, delay=0, latency=300):
+    def __init__(
+            self,
+            log_dir,
+            config_id,
+            loss=LossConfig('random', [0]),
+            delay=0,
+            latency=300
+    ):
         Emulation.__init__(self, log_dir, config_id)
         self._tc_cmd = 'add'
         self._reference_bandwidth = 1.0
@@ -33,11 +46,15 @@ class VariableAvailableCapacity(Emulation):
         self._delay = delay
         self._latency = latency
         self._link_configs = [
-                    LinkConfig(0, 1000000, loss, delay, latency),
-                    LinkConfig(40, 2500000, loss, delay, latency),
-                    LinkConfig(60, 600000, loss, delay, latency),
-                    LinkConfig(80, 1000000, loss, delay, latency),
-                ]
+            LinkConfig(
+                0, 1000000, loss.name, loss.parameters, delay, latency),
+            LinkConfig(
+                40, 2500000, loss.name, loss.parameters, delay, latency),
+            LinkConfig(
+                60, 600000, loss.name, loss.parameters, delay, latency),
+            LinkConfig(
+                80, 1000000, loss.name, loss.parameters, delay, latency),
+        ]
         self._remaining_configs = self._link_configs
 
     def topology(self, n=1):
@@ -54,7 +71,7 @@ class VariableAvailableCapacity(Emulation):
         emulation_builders: [VariableAvailableCapacityBuilder] = []
         for i, config in enumerate(configs):
             emulation_builders.append(VariableAvailableCapacityBuilder(
-                config[0], config[1], config[2],
+                LossConfig(**config[0]), config[1], config[2],
             ))
         return emulation_builders
 
@@ -87,16 +104,18 @@ class VariableAvailableCapacity(Emulation):
     def get_link_update_cmds(self, config):
         cmds = []
         for iface in [self.s1_iface, self.s2_iface]:
+            loss_params = ' '.join([f'{p}%' for p in config.loss_parameters])
             netem_cmd = 'tc qdisc ' \
                         f'{self._tc_cmd} dev {iface} root handle 1: ' \
                         f'netem delay {config.delay}ms ' \
-                        f'loss random {config.loss}%'
+                        f'loss {config.loss_name} {loss_params}'
 
             qdisc_cmd = 'tc qdisc ' \
                         f'{self._tc_cmd} dev {iface} parent 1: handle 2: ' \
                         f'tbf rate {config.bandwidth}bit burst 15000 ' \
                         f'latency {config.latency}ms'
 
+            print(netem_cmd)
             cmds.append(netem_cmd)
             cmds.append(qdisc_cmd)
 

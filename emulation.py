@@ -11,7 +11,8 @@ from mininet.topo import Topo
 class LinkConfig(NamedTuple):
     start_time: int = 0
     bandwidth: int = 1000000
-    loss: float = 0.0
+    loss_name: str = 'random'
+    loss_parameters: list[float] = 0.0
     delay: int = 0
     latency: int = 300
 
@@ -20,7 +21,8 @@ class LinkConfig(NamedTuple):
             str(x) for x in [
                 self.start_time,
                 self.bandwidth,
-                self.loss,
+                self.loss_name,
+                self.loss_parameters,
                 self.delay,
                 self.latency,
             ]])
